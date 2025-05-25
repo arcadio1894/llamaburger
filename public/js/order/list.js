@@ -75,6 +75,137 @@ $(document).ready(function () {
         const orderId = $(this).data('order-id');
         window.open(`/factura/imprimir/${orderId}`, '_blank');
     });
+
+    $(document).on('click', '[data-facturador]', function () {
+        const btn = $(this);
+
+        // Asignar ID
+        $('#order_id').val(btn.data('id'));
+
+        const tipo = btn.data('tipo-comprobante');
+        const docTipo = btn.data('tipo-documento-cliente');
+        const numero = btn.data('numero-documento-cliente');
+        const direccion = btn.data('direccion-cliente');
+        const email = btn.data('email-cliente');
+        const nombre = btn.data('nombre-cliente');
+
+        // Limpiar campos anteriores
+        $('#formFacturador')[0].reset();
+        $('#datos_boleta, #datos_factura').addClass('d-none');
+
+        if (tipo === 'boleta') {
+            $('#radio_boleta').prop('checked', true);
+            $('#datos_boleta').removeClass('d-none');
+
+            $('#dni').val(numero);
+            $('#email_invoice_boleta').val(email);
+        } else if (tipo === 'factura') {
+            $('#radio_factura').prop('checked', true);
+            $('#datos_factura').removeClass('d-none');
+
+            $('#ruc').val(numero);
+            $('#razon_social').val(nombre);
+            $('#direccion_fiscal').val(direccion);
+            $('#email_invoice_factura').val(email);
+        }
+
+        $('#modalFacturador').modal('show');
+    });
+
+    $('input[name="invoice_type"]').on('change', function () {
+        const selected = $(this).val();
+        if (selected === 'boleta') {
+            $('#datos_boleta').removeClass('d-none');
+            $('#datos_factura').addClass('d-none');
+        } else {
+            $('#datos_factura').removeClass('d-none');
+            $('#datos_boleta').addClass('d-none');
+        }
+    });
+
+    $('#btnGuardarDatos').on('click', function () {
+        const tipoComprobante = $('input[name="invoice_type"]:checked').val();
+        const orderId = $('#order_id').val();
+
+        let data = {
+            order_id: orderId,
+            type_document: tipoComprobante,
+        };
+
+        if (tipoComprobante === 'boleta') {
+            data.dni = $('#dni').val();
+            data.email = $('#email_invoice_boleta').val();
+        } else if (tipoComprobante === 'factura') {
+            data.ruc = $('#ruc').val();
+            data.razon_social = $('#razon_social').val();
+            data.direccion_fiscal = $('#direccion_fiscal').val();
+            data.email = $('#email_invoice_factura').val();
+        }
+
+        $.ajax({
+            url: '/dashboard/orders/update-invoice-data',
+            type: 'POST',
+            data: data,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                $.alert({
+                    title: 'Éxito',
+                    content: response.message,
+                    type: 'green'
+                });
+                //$('#modalFacturador').modal('hide');
+            },
+            error: function (xhr) {
+                $.alert({
+                    title: 'Error',
+                    content: xhr.responseJSON.message || 'Ocurrió un error',
+                    type: 'red'
+                });
+            }
+        });
+    });
+
+    $('#btnGenerarComprobante').on('click', function () {
+        const orderId = $('#order_id').val();
+
+        $.ajax({
+            url: '/dashboard/facturador/generar', // Puedes cambiar el nombre si quieres
+            type: 'POST',
+            data: {
+                order_id: orderId
+            },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function () {
+                $('#btnGenerarComprobante').prop('disabled', true).text('Generando...');
+            },
+            success: function (response) {
+                $.alert({
+                    title: 'Comprobante generado',
+                    content: response.message,
+                    type: 'green'
+                });
+                if (response.pdf_url) {
+                    $('#btnDescargarPDF').attr('href', response.pdf_url);
+                    $('#downloadSection').removeClass('d-none');
+                }
+                //$('#modalFacturador').modal('hide');
+            },
+            error: function (xhr) {
+                $.alert({
+                    title: 'Error',
+                    content: xhr.responseJSON.message || 'No se pudo generar el comprobante',
+                    type: 'red'
+                });
+            },
+            complete: function () {
+                $('#btnGenerarComprobante').prop('disabled', false).text('Generar comprobante');
+            }
+        });
+    });
 });
 
 var $formDelete;
@@ -615,6 +746,19 @@ function renderDataTable(data) {
     cloneBtnActive.querySelector("[data-imprimir_comprobante]").setAttribute("data-order-id", data.id);*/
 
     cloneBtnActive.querySelector("[data-btn_whatsapp]").setAttribute("href", data.url);
+
+    const btnFacturador = cloneBtnActive.querySelector("[data-facturador]");
+    if (data.tipo_comprobante !== null) {
+        btnFacturador.setAttribute("data-id", data.id);
+        btnFacturador.setAttribute("data-nombre-cliente", data.nombre_cliente);
+        btnFacturador.setAttribute("data-tipo-documento-cliente", data.tipo_documento_cliente);
+        btnFacturador.setAttribute("data-numero-documento-cliente", data.numero_documento_cliente);
+        btnFacturador.setAttribute("data-direccion-cliente", data.direccion_cliente);
+        btnFacturador.setAttribute("data-email-cliente", data.email_cliente);
+        btnFacturador.setAttribute("data-tipo-comprobante", data.tipo_comprobante);
+    } else {
+        btnFacturador.remove(); // lo quitamos si no hay tipo_comprobante
+    }
 
     botones.append(cloneBtnActive);
 

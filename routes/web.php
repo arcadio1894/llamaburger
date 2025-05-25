@@ -25,6 +25,7 @@ use Illuminate\Http\Request;
 use \App\Http\Controllers\RewardController;
 use \App\Http\Controllers\ProfileController;
 use \App\Http\Controllers\MilestoneController;
+use \App\Http\Controllers\NubeFactController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -141,6 +142,10 @@ Route::middleware('auth')->group(function (){
         Route::post('/anular/order/{order}', [OrderController::class, 'anularOrder']);
         Route::post('/activar/order/{order}', [OrderController::class, 'activarOrder']);
         Route::get('/orders/{orderId}/details', [OrderController::class, 'getOrderDetails']);
+
+        Route::post('/orders/update-invoice-data', [OrderController::class, 'updateInvoiceData']);
+        Route::post('/facturador/generar', [NubeFactController::class, 'generarComprobante'])->name('facturador.generar');
+
 
         // TODO: Rutas de Mantenedor de Productos (Productos Admin)
         Route::get('/listado/productos/', [ProductController::class, 'indexAdmin'])
@@ -355,3 +360,5 @@ Route::get('/imprimir/comanda/{id}', [PrintController::class, 'generarComanda'])
 Route::get('/products/initialize-days', [ProductController::class, 'initializeProductDays']);
 
 Route::get('/reporte/cantidad-pizzas', [OrderController::class, 'reportePizzasFinde']);
+
+Route::get('/generate/recibo/prueba', [NubeFactController::class, 'generarRecibo']);

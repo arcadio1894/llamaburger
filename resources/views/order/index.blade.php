@@ -249,7 +249,7 @@
                                         <article class="card">
                                             <div class="card-body row">
                                                 <div class="col"> <strong>Tu pedido llegará aproximadamente:</strong> <br> {{ $order->date_estimated_format ?? 'Fecha no disponible' }}</div>
-                                                <div class="col"> <strong>Monto a pagar:</strong> <br> S/. {{ $order->amount_pay }} </div>
+                                                <div class="col"> <strong>Monto a pagar:</strong> <br> S/. {{ $order->data_totals['total_a_pagar'] }} </div>
                                             </div>
                                         </article>
                                         <div class="track">

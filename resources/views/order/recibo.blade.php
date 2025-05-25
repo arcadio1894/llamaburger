@@ -101,11 +101,11 @@
     @endforeach
 
     <div class="line"></div>
-    <p><b>Sub Total:</b> <span style="float: right;">S/. {{ $amount_subtotal }}</span></p>
     <p><b>Envío:</b> <span style="float: right;">S/. {{ number_format($amount_shipping, 2, '.', '') }}</span></p>
     <p><b>Descuento:</b> <span style="float: right;">S/. {{ $discount }}</span></p>
-    <p><b>IGV:</b> <span style="float: right;">S/. {{ number_format($amount_igv, 2, '.', '') }}</span></p>
-    <p><b>TOTAL:</b> <span style="float: right;">S/. {{ number_format($order->amount_pay, 2, '.', '') }}</span></p>
+    <p><b>Gravada:</b> <span style="float: right;">S/. {{ $totals['total_gravada'] }}</span></p>
+    <p><b>IGV:</b> <span style="float: right;">S/. {{ number_format($totals['total_igv'], 2, '.', '') }}</span></p>
+    <p><b>TOTAL:</b> <span style="float: right;">S/. {{ number_format($totals['total_a_pagar'], 2, '.', '') }}</span></p>
     <div class="line"></div>
     <p class="text-center" style="font-size: 18px"><b>{{($order->payment_method_id == null) ? 'Sin método de pago':$order->payment_method->name }} </b></p>
     <div class="line"></div>

@@ -129,6 +129,25 @@ class OrderController extends Controller
             //Hola {{Nombre del Cliente}} te escribimos de parte de Fuego y Masa para confirmar tu pedido para la direccion {{Direccion}}
             $text = 'Hola '. $cliente .' te escribimos de parte de Fuego y Masa para confirmar tu pedido para la direccion '.$address;
             $url = 'https://api.whatsapp.com/send?phone='.$direccion->phone.'&text='.$text;
+
+            $tipo_comprobante = null;
+            if ($order->type_document == '01')
+            {
+                $tipo_comprobante = 'factura';
+            } elseif ( $order->type_document == '03' ) {
+                $tipo_comprobante = 'boleta';
+            }
+
+            $tipo_documento_cliente = null;
+            if ($order->tipo_documento_cliente == 1)
+            {
+                $tipo_documento_cliente = 'dni';
+            } elseif ( $order->tipo_documento_cliente == 6 ) {
+                $tipo_documento_cliente = 'ruc';
+            }
+
+            $totals = $order->data_totals;
+            //dd($totals);
             array_push($arrayGuides, [
                 "id" => $order->id,
                 "code" => "ORDEN - ".$order->id,
@@ -139,11 +158,18 @@ class OrderController extends Controller
                 "address" => $direccion->address_line. " - ".( (!isset($distrito)) ? 'N/A':$distrito->name),
                 "latitude" => $direccion->latitude,
                 "longitude" => $direccion->longitude,
-                "total" => $order->amount_pay,
+                //"total" => $order->amount_pay
+                "total" => number_format($totals['total_a_pagar'], 2, '.', ''),
                 "method" => ($order->payment_method_id == null) ? 'Sin método de pago':$order->payment_method->name ,
                 "state" => $order->status_name,
                 "data_payment" => $order->data_payment,
-                "url" => $url
+                "url" => $url,
+                "nombre_cliente" => $order->nombre_cliente,
+                "tipo_documento_cliente" => $tipo_documento_cliente,
+                "numero_documento_cliente" => $order->numero_documento_cliente,
+                "direccion_cliente" => $order->direccion_cliente,
+                "email_cliente" => $order->email_cliente,
+                "tipo_comprobante" => $tipo_comprobante
             ]);
         }
 
@@ -910,5 +936,31 @@ class OrderController extends Controller
             }
         }
 
+    }
+
+    public function updateInvoiceData(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'type_document' => 'required|in:boleta,factura',
+        ]);
+
+        $order = Order::findOrFail($request->order_id);
+
+        if ($request->type_document === 'boleta') {
+            $order->type_document = '03';
+            $order->numero_documento_cliente = $request->dni;
+            $order->email_cliente = $request->email;
+        } elseif ($request->type_document === 'factura') {
+            $order->type_document = '01';
+            $order->numero_documento_cliente = $request->ruc;
+            $order->nombre_cliente = $request->razon_social;
+            $order->direccion_cliente = $request->direccion_fiscal;
+            $order->email_cliente = $request->email;
+        }
+
+        $order->save();
+
+        return response()->json(['message' => 'Datos actualizados correctamente.']);
     }
 }
