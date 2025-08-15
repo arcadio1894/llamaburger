@@ -15,9 +15,7 @@ class TypeSeeder extends Seeder
     public function run()
     {
         $types = [
-            ['name' => 'Familiar', 'size' => '35cm', 'price' => 35.00],
-            ['name' => 'Grande', 'size' => '30cm', 'price' => 31.00],
-            ['name' => 'Mediana', 'size' => '20cm', 'price' => 22.00],
+            ['name' => 'Normal', 'size' => '12cm', 'price' => 15.00],
         ];
 
         foreach ($types as $type) {

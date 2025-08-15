@@ -33,25 +33,25 @@
         <!-- Mobile Metas -->
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <!-- Site Metas -->
-        <title>FUEGO Y MASA | La Mejor Pizza en Trujillo - Delivery Rápido y Delicioso</title>
-        <meta name="description" content="Descubre las pizzas más deliciosas en Trujillo. FUEGO Y MASA ofrece delivery rápido, promociones irresistibles y calidad insuperable. ¡Haz tu pedido ahora!">
-        <meta name="keywords" content="pizzas Trujillo, delivery pizza Trujillo, pizzerías en Trujillo, FUEGO Y MASA, mejor pizza Trujillo">
-        <meta name="author" content="FUEGO Y MASA">
+        <title>LlamaBurger | La Mejor Hamburguesa en Trujillo - Delivery Rápido y Delicioso</title>
+        <meta name="description" content="Descubre las Hamburguesas más deliciosas en Trujillo. LlamaBurger ofrece delivery rápido, promociones irresistibles y calidad insuperable. ¡Haz tu pedido ahora!">
+        <meta name="keywords" content="Hamburguesas Trujillo, delivery Hamburguesa Trujillo, pizzerías en Trujillo, LlamaBurger, mejor Hamburguesa Trujillo">
+        <meta name="author" content="LlamaBurger">
         <meta name="robots" content="index, follow">
 
         <!-- Open Graph para redes sociales -->
-        <meta property="og:title" content="FUEGO Y MASA | La Mejor Pizza en Trujillo">
-        <meta property="og:description" content="Disfruta las mejores pizzas en Trujillo. Delivery rápido y promociones exclusivas en FUEGO Y MASA. ¡Prueba el sabor que encanta!">
-        <meta property="og:image" content="https://www.fuegoymasa.com/images/pizza-destacada.jpg">
+        <meta property="og:title" content="LlamaBurger | La Mejor Hamburguesa en Trujillo">
+        <meta property="og:description" content="Disfruta las mejores Hamburguesas en Trujillo. Delivery rápido y promociones exclusivas en LlamaBurger. ¡Prueba el sabor que encanta!">
+        <meta property="og:image" content="https://www.fuegoymasa.com/images/Hamburguesa-destacada.jpg">
         <meta property="og:url" content="https://www.fuegoymasa.com">
         <meta property="og:type" content="website">
         <meta property="og:locale" content="es_PE">
 
         <!-- Twitter Cards -->
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="FUEGO Y MASA | La Mejor Pizza en Trujillo">
-        <meta name="twitter:description" content="Haz tu pedido online en FUEGO Y MASA y disfruta de las mejores pizzas en Trujillo. ¡Promociones especiales todos los días!">
-        <meta name="twitter:image" content="https://www.fuegoymasa.com/images/pizza-destacada.jpg">
+        <meta name="twitter:title" content="LlamaBurger | La Mejor Hamburguesa en Trujillo">
+        <meta name="twitter:description" content="Haz tu pedido online en LlamaBurger y disfruta de las mejores Hamburguesas en Trujillo. ¡Promociones especiales todos los días!">
+        <meta name="twitter:image" content="https://www.fuegoymasa.com/images/Hamburguesa-destacada.jpg">
 
         <!-- Favicon -->
         <link rel="icon" href="{{ asset('landing/images/favicon.png') }}" type="image/x-icon">
@@ -63,7 +63,7 @@
 
         <link rel="shortcut icon" href="{{ asset('landing/images/favicon.png') }}" type="">
 
-        <title> Fuego y Masa </title>
+        <title> LlamaBurger </title>
 
         <!-- bootstrap core css -->
         <link rel="stylesheet" type="text/css" href="{{ asset('landing/css/bootstrap.css') }}" />
@@ -373,7 +373,7 @@
                     <nav class="navbar navbar-expand-lg custom_nav-container ">
                         <a class="navbar-brand" href="{{ url('/') }}">
                             <span>
-                              Fuego y Masa
+                              LlamaBurger
                             </span>
                         </a>
 
@@ -777,7 +777,7 @@
                                         Trujillo
                                     </span>
                                 </a>
-                                <a href="https://wa.me/51906343258?text=Hola%20FUEGO%20Y%20MASA,%20quiero%20comprar%20una%20pizza.%20%F0%9F%8D%95" target="_blank">
+                                <a href="https://wa.me/51906343258?text=Hola%20FUEGO%20Y%20MASA,%20quiero%20comprar%20una%20Hamburguesa.%20%F0%9F%8D%95" target="_blank">
                                     <i class="fab fa-whatsapp" aria-hidden="true"></i>
                                     <span>
                                         Whatsapp  906-343-258
@@ -799,7 +799,7 @@
                     <div class="col-md-4 footer-col">
                         <div class="footer_detail">
                             <a href="" class="footer-logo">
-                                Fuego y Masa
+                                LlamaBurger
                             </a>
                             <p>
                                 Encendemos la pasión en cada creación, con ingredientes frescos y dedicación, para llevar calidad y sabor a cada mesa.
@@ -814,7 +814,7 @@
                                 <a href="https://www.instagram.com/fuegoymasaperu/" target="_blank">
                                     <i class="fab fa-instagram"></i>
                                 </a>
-                                <a href="https://wa.me/51906343258?text=Hola%20FUEGO%20Y%20MASA,%20quiero%20comprar%20una%20pizza.%20%F0%9F%8D%95" target="_blank">
+                                <a href="https://wa.me/51906343258?text=Hola%20FUEGO%20Y%20MASA,%20quiero%20comprar%20una%20Hamburguesa.%20%F0%9F%8D%95" target="_blank">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                                 <a href="https://www.tiktok.com/@fuegoymasa" target="_blank">
@@ -864,7 +864,7 @@
         </div>
         @endif
 
-        <a href="https://wa.me/51906343258?text=Hola%20FUEGO%20Y%20MASA,%20quiero%20comprar%20una%20pizza.%20%F0%9F%8D%95" target="_blank" class="whatsapp-btn">
+        <a href="https://wa.me/51906343258?text=Hola%20FUEGO%20Y%20MASA,%20quiero%20comprar%20una%20Hamburguesa.%20%F0%9F%8D%95" target="_blank" class="whatsapp-btn">
             <span class="whatsapp-text">
                 <span class="whatsapp-line">PIDE POR</span>
                 <span class="whatsapp-line">WHATSAPP</span>

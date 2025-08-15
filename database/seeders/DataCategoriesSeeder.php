@@ -15,23 +15,13 @@ class DataCategoriesSeeder extends Seeder
     public function run()
     {
         Category::create([
-            'name' => 'Clasicas',
-            'description' => 'Pizzas Clasicas'
+            'name' => 'Hamburguesas Clásicas',
+            'description' => 'Recetas tradicionales con el sabor auténtico de la parrilla.'
         ]);
 
         Category::create([
-            'name' => 'Especiales',
-            'description' => 'Pizzas Especiales'
-        ]);
-
-        Category::create([
-            'name' => 'Burritos',
-            'description' => 'Burritos'
-        ]);
-
-        Category::create([
-            'name' => 'Fries',
-            'description' => 'Fries'
+            'name' => 'Hamburguesas Especiales',
+            'description' => 'Combinaciones creativas y sabores únicos para los más exigentes.'
         ]);
     }
 }

@@ -15,7 +15,7 @@ class DataCouponSeeder extends Seeder
     public function run()
     {
         Coupon::create([
-            'name' => 'MiPrimeraPizza',
+            'name' => 'MiPrimeraBurger',
             'description' => "Codigo de promoción por la primera pizza",
             'status' => 'active',
             'amount' => 0.00,
@@ -24,7 +24,7 @@ class DataCouponSeeder extends Seeder
         ]);
 
         Coupon::create([
-            'name' => 'UnMesConFuegoYMasa',
+            'name' => 'UnMesConLlamaBurger',
             'description' => "Codigo de promoción por el primer mes",
             'status' => 'active',
             'amount' => 10.00,

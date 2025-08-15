@@ -19,11 +19,17 @@ class DatabaseSeeder extends Seeder
          *
          */
 
-        //$this->call(DataCategoriesSeeder::class);
-        //$this->call(DataProductsSeeder::class);
-        //$this->call(DataPaymentMethodsSeeder::class);
+        $this->call(DataCategoriesSeeder::class);
+        $this->call(DataCouponSeeder::class);
+        $this->call(DataGeneralSeeder::class);
+        $this->call(DataMotivosSeeder::class);
+        $this->call(DataPaymentMethodsSeeder::class);
+        $this->call(DataProductsSeeder::class);
+        $this->call(TypeSeeder::class);
+        $this->call(ProductAndProductTypeSeeder::class);
 
-        //$this->call(TypeSeeder::class);
-        //$this->call(ProductAndProductTypeSeeder::class);
+        $this->call(DataRewardSeeder::class);
+        $this->call(DataSubmotivosSeeder::class);
+
     }
 }
