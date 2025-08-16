@@ -20,6 +20,18 @@
             transition: all 0.3s;
             border: none !important;
         }
+
+        .img {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .img img {
+            width: 350px;
+            height: auto;
+        }
     </style>
 @endsection
 
@@ -34,7 +46,8 @@
             <div class="row justify-content-center">
                 <div class="col-md-12 col-lg-10">
                     <div class="wrap d-md-flex">
-                        <div class="img" style="background-image: url({{ asset('landing/images/about-img1.png') }});">
+                        <div class="img">
+                            <img src="{{ asset('/landing/images/about-img1.png') }}" alt="Imagen">
                         </div>
                         <div class="login-wrap p-4 p-md-5">
 

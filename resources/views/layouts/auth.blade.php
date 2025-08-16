@@ -16,7 +16,7 @@
     <meta name="author" content="" />
     <link rel="shortcut icon" href="{{ asset('landing/images/favicon.png') }}" type="">
 
-    <title> Fuego y Masa </title>
+    <title> LlamaBurger </title>
 
     <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
 
