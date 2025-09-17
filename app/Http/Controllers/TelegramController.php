@@ -32,7 +32,7 @@ class TelegramController extends Controller
         // Devuelve la respuesta de Telegram
         return $response;*/
 
-        $user = User::find(2);
+        $user = User::find(1);
         $type = 'process';
         $mensaje2 = "El usuario con nombre XXXXXXX con fecha de registro 01 Jul 2023, 6:21 pm necesita que valides sus documentos.";
 
