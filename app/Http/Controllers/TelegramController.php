@@ -45,7 +45,7 @@ class TelegramController extends Controller
     {
         if ($type == 'process') {
             // Encuentra al usuario que recibirá la notificación (puede ser otro usuario)
-            $user = User::find(2);
+            $user = User::find(1);
 
             // Construye el mensaje dinámicamente
             $message = "Se ha generado un nuevo pedido ".$data['order']." para el cliente " . $data['nameUser']." - ". $data['nameUserReal']." - ". $data['phoneUser'] .
@@ -54,7 +54,7 @@ class TelegramController extends Controller
             // Envía la notificación
             $user->notify(new TelegramNotification($type, $message));
         } elseif ($type == 'cash_register_warning') {
-            $user = User::find(2); // o el ID del admin
+            $user = User::find(1); // o el ID del admin
             $message = $data['mensaje'];
             $user->notify(new TelegramNotification($type, $message));
         } else {
