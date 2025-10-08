@@ -40,9 +40,9 @@
 
 @section('page-title')
     <h5 class="card-title">Listado de imagenes de sliders</h5>
-    {{--@can('create_material')--}}
+    @can('sliders.crear')
         <a href="{{ route('sliders.create') }}" class="btn btn-outline-success btn-sm float-right" > <i class="fa fa-plus font-20"></i> Nueva imagen </a>
-    {{--@endcan--}}
+    @endcan
 @endsection
 
 @section('page-breadcrumb')

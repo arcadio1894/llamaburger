@@ -44,15 +44,22 @@ function loadZones(shopId) {
         success: function (zones) {
             let rows = "";
             zones.forEach((zone, index) => {
+                let buttons = "";
+
+                // 👇 solo agregar el botón si tiene permiso
+                if (hasPerm('locales.ver_zona')) {
+                    buttons += `<button class="btn btn-info btn-sm" onclick="viewZone(${zone.id})">Ver zona</button> `;
+                }
+                if (hasPerm('locales.set_precio')) {
+                    buttons += `<button class="btn btn-warning btn-sm" onclick="setPrice(${zone.id}, ${zone.price})">Colocar precio</button>`;
+                }
+
                 rows += `
                     <tr>
                         <td>${index + 1}</td>
                         <td>${zone.name}</td>
                         <td>${zone.price}</td>
-                        <td>
-                            <button class="btn btn-info btn-sm" onclick="viewZone(${zone.id})">Ver zona</button>
-                            <button class="btn btn-warning btn-sm" onclick="setPrice(${zone.id}, ${zone.price})">Colocar precio</button>
-                        </td>
+                        <td>${buttons}</td>
                     </tr>
                 `;
             });

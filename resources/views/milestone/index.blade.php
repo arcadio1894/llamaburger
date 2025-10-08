@@ -101,8 +101,9 @@
 
 @section('page-title')
     <h5 class="card-title">Listado de Premios</h5>
+    @can('rewards.crear')
     <a href="{{ route('milestones.create') }}" class="btn btn-outline-success btn-sm float-right" > <i class="fa fa-plus font-20"></i> Nuevo Hito </a>
-
+    @endcan
 @endsection
 
 @section('page-breadcrumb')

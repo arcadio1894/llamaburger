@@ -12,5 +12,12 @@ class Distributor extends Model
     protected $fillable = [
         'name',
         'phone',
+        'activo',
+        'user_id'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

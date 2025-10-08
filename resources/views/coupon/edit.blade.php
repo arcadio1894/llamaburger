@@ -156,7 +156,9 @@
         <div class="row">
             <div class="col-12">
                 <a href="{{ route('coupons.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                @can('cupones.editar')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar cupón</button>
+                @endcan
             </div>
         </div>
     </form>

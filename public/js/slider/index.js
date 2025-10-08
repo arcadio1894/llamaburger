@@ -58,17 +58,20 @@ $(document).ready(function () {
                     text = text + ' <button data-ver_image="'+item.id+'" data-image="'+item.image+'" '+
                         ' class="btn btn-outline-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Ver imagen "><i class="fas fa-images"></i></button>';
 
-                    //if ( $.inArray('update_categoryInvoice', $permissions) !== -1 ) {
-                    text = text + ' <a href="'+document.location.origin+ '/dashboard/editar/imagen/slider/'+item.id+
-                        '" class="btn btn-outline-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Editar imagen"><i class="fa fa-pen"></i></a>';
-                    //}
-                    //if ( $.inArray('destroy_categoryInvoice', $permissions) !== -1 ) {
-                    text = text + ' <button data-delete="'+item.id+'" data-description="'+item.image+'" '+
-                        ' class="btn btn-outline-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar "><i class="fa fa-trash"></i></button>';
-                    //}
+                    if (hasPerm('sliders.editar')) {
+                        text = text + ' <a href="'+document.location.origin+ '/dashboard/editar/imagen/slider/'+item.id+
+                            '" class="btn btn-outline-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Editar imagen"><i class="fa fa-pen"></i></a>';
+                    }
 
-                    text = text + ' <button data-id="'+item.id+'" data-state="'+item.active+'" data-description="'+item.image+'" '+
-                        ' class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" data-placement="top" title="Desactivar/Activar "><i class="far fa-bell-slash"></i></button>';
+                    if (hasPerm('sliders.eliminar')) {
+                        text = text + ' <button data-delete="'+item.id+'" data-description="'+item.image+'" '+
+                            ' class="btn btn-outline-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar "><i class="fa fa-trash"></i></button>';
+                    }
+
+                    if (hasPerm('sliders.cambiar_estado')) {
+                        text = text + ' <button data-id="'+item.id+'" data-state="'+item.active+'" data-description="'+item.image+'" '+
+                            ' class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" data-placement="top" title="Desactivar/Activar "><i class="far fa-bell-slash"></i></button>';
+                    }
 
                     return text;
 

@@ -779,24 +779,37 @@ function renderDataTable(data) {
         console.error('No se encontró el elemento <tr> en el clon.');
     }
 
-    if ( data.order_id != null )
-    {
-        var botones2 = clone.querySelector("[data-buttons]");
+    if (data.order_id != null) {
+        const botones2 = clone.querySelector('[data-buttons]');
 
-        var cloneBtn2 = activateTemplate('#template-button');
-        cloneBtn2.querySelector("[data-print_nota]").setAttribute("data-id", data.id);
-        let url = document.location.origin + '/imprimir/recibo/' + data.order_id;
-        cloneBtn2.querySelector("[data-print_nota]").setAttribute("href", url);
+        // Clon del template
+        const cloneBtn2 = activateTemplate('#template-button');
 
-        // Configuración del segundo botón (mostrar solo si data.type === 'Regularizar')
-        var regularizarBtn = cloneBtn2.querySelector("[data-regularizar]");
-        if (data.type === 'Regularizar') {
-            regularizarBtn.setAttribute("data-id", data.id);
+        // ---- botón imprimir boleta (permiso: caja.imprimir_boleta) ----
+        const btnImprimir = cloneBtn2.querySelector('[data-print_nota]');
+        if (hasPerm('caja.imprimir_boleta')) {
+            btnImprimir.setAttribute('data-id', data.id);
+            const url = document.location.origin + '/imprimir/recibo/' + data.order_id;
+            btnImprimir.setAttribute('href', url);
+            // si quieres, asegúrate de que esté visible:
+            btnImprimir.style.display = '';
         } else {
-            // Ocultar el botón si no aplica
-            regularizarBtn.style.display = 'none';
+            // sin permiso -> ocultar/comentar el botón
+            btnImprimir.style.display = 'none';
+            // o: btnImprimir.remove();
         }
 
+        // ---- botón regularizar (permiso: caja.regularize) ----
+        const regularizarBtn = cloneBtn2.querySelector('[data-regularizar]');
+        if (hasPerm('caja.regularize') && data.type === 'Regularizar') {
+            regularizarBtn.setAttribute('data-id', data.id);
+            regularizarBtn.style.display = '';
+        } else {
+            regularizarBtn.style.display = 'none';
+            // o: regularizarBtn.remove();
+        }
+
+        // Agregar el bloque de botones al DOM
         botones2.append(cloneBtn2);
     }
 

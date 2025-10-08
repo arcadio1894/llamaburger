@@ -499,11 +499,11 @@
                                     <span class="text-white" id="quantityCart">(0)</span>
                                 </a>
                                 @auth
-                                    @if( Auth::user()->is_admin )
+                                    @can('dashboard.view')
                                     <a href="{{ route('dashboard.principal') }}" class="order_online">
                                         Dashboard
                                     </a>
-                                    @endif
+                                    @endcan
                                 @endauth
                             </div>
                         </div>

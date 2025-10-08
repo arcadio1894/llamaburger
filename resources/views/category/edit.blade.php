@@ -82,7 +82,9 @@
         <div class="row">
             <div class="col-12">
                 <a href="{{ route('categories.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                @can('categorias.editar')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar categoría</button>
+                @endcan
             </div>
         </div>
         <!-- /.card-footer -->

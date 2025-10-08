@@ -472,26 +472,26 @@ function renderDataTable(data, activeColumns) {
     clone.querySelector("[data-text_status]").innerHTML = data.statusText;
 
     // Configurar enlaces y botones según los permisos y datos
-    /*if ($.inArray('update_material', $permissions) !== -1) {*/
+    if (hasPerm('locales.editar_tiendas')) {
         let url = document.location.origin + '/dashboard/modificar/tienda/' + data.id;
         clone.querySelector("[data-editar_shop]").setAttribute("href", url);
-    /*} else {
-        let element = clone.querySelector("[data-editar_material]");
+    } else {
+        let element = clone.querySelector("[data-editar_shop]");
         if (element) {
             element.style.display = 'none';
         }
-    }*/
+    }
 
-    /*if ($.inArray('enable_material', $permissions) !== -1) {*/
+    if (hasPerm('locales.cambiar_estado_tienda')) {
         clone.querySelector("[data-deshabilitar]").setAttribute("data-id", data.id);
         clone.querySelector("[data-deshabilitar]").setAttribute("data-description", data.name);
         clone.querySelector("[data-deshabilitar]").setAttribute("data-state", data.status);
-    /*} else {
+    } else {
         let element = clone.querySelector("[data-deshabilitar]");
         if (element) {
             element.style.display = 'none';
         }
-    }*/
+    }
 
     // Agregar la fila clonada al cuerpo de la tabla
     $("#body-table").append(clone);

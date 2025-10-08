@@ -641,46 +641,125 @@ function renderDataTable(data) {
     var botones = clone.querySelector("[data-buttons]");
 
     var cloneBtnActive = activateTemplate('#template-active');
-    cloneBtnActive.querySelector("[data-ver_detalles]").setAttribute("data-id", data.id);
+
+    if (hasPerm('pedidos.ver_detalles')) {
+        cloneBtnActive.querySelector("[data-ver_detalles]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-ver_detalles]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     /*cloneBtnActive.querySelector("[data-ver_ruta]").setAttribute("data-id", data.id);
     cloneBtnActive.querySelector("[data-ver_ruta]").setAttribute("data-address", data.address);
     cloneBtnActive.querySelector("[data-ver_ruta]").setAttribute("data-latitude", data.latitude);
     cloneBtnActive.querySelector("[data-ver_ruta]").setAttribute("data-longitude", data.longitude);
 */
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-id", data.id);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-address", data.address);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-latitude", data.latitude);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-longitude", data.longitude);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-phone", data.phone);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-customer", data.customer);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-state", data.method);
-    cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-referencia", data.referencia);
+    if (hasPerm('pedidos.ver_datos')) {
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-id", data.id);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-address", data.address);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-latitude", data.latitude);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-longitude", data.longitude);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-phone", data.phone);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-customer", data.customer);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-state", data.method);
+        cloneBtnActive.querySelector("[data-ver_pop_up]").setAttribute("data-referencia", data.referencia);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-ver_pop_up]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-id", data.id);
-    cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-address", data.address);
-    cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-latitude", data.latitude);
-    cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-longitude", data.longitude);
+    if (hasPerm('pedidos.ver_rutas')) {
+        cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-id", data.id);
+        cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-address", data.address);
+        cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-latitude", data.latitude);
+        cloneBtnActive.querySelector("[data-ver_ruta_map]").setAttribute("data-longitude", data.longitude);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-ver_ruta_map]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    cloneBtnActive.querySelector("[data-cocinando]").setAttribute("data-id", data.id);
-    cloneBtnActive.querySelector("[data-enviando]").setAttribute("data-id", data.id);
-    cloneBtnActive.querySelector("[data-completado]").setAttribute("data-id", data.id);
+    if (hasPerm('pedidos.cambiar_estado')) {
+        cloneBtnActive.querySelector("[data-cocinando]").setAttribute("data-id", data.id);
+        cloneBtnActive.querySelector("[data-enviando]").setAttribute("data-id", data.id);
+        cloneBtnActive.querySelector("[data-completado]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-cocinando]");
+        let element2 = cloneBtnActive.querySelector("[data-enviando]");
+        let element3 = cloneBtnActive.querySelector("[data-completado]");
+        if (element) {
+            element.style.display = 'none';
+        }
+        if (element2) {
+            element2.style.display = 'none';
+        }
+        if (element3) {
+            element3.style.display = 'none';
+        }
+    }
 
-    cloneBtnActive.querySelector("[data-print_nota]").setAttribute("data-id", data.id);
-    cloneBtnActive.querySelector("[data-print_comanda]").setAttribute("data-id", data.id);
+    if (hasPerm('pedidos.imprimir_boleta')) {
+        cloneBtnActive.querySelector("[data-print_nota]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-print_nota]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    let url = document.location.origin + '/imprimir/recibo/' + data.id;
-    cloneBtnActive.querySelector("[data-print_nota]").setAttribute("href", url);
+    if (hasPerm('pedidos.imprimir_comanda')) {
+        cloneBtnActive.querySelector("[data-print_comanda]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-print_comanda]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    let url_comanda = document.location.origin + '/imprimir/comanda/' + data.id;
-    cloneBtnActive.querySelector("[data-print_comanda]").setAttribute("href", url_comanda);
+    if (hasPerm('pedidos.imprimir_boleta')) {
+        let url = document.location.origin + '/imprimir/recibo/' + data.id;
+        cloneBtnActive.querySelector("[data-print_nota]").setAttribute("href", url);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-print_nota]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    cloneBtnActive.querySelector("[data-anular]").setAttribute("data-id", data.id);
+    if (hasPerm('pedidos.imprimir_comanda')) {
+        let url_comanda = document.location.origin + '/imprimir/comanda/' + data.id;
+        cloneBtnActive.querySelector("[data-print_comanda]").setAttribute("href", url_comanda);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-print_comanda]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
+
+    if (hasPerm('pedidos.anular_orden')) {
+        cloneBtnActive.querySelector("[data-anular]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-anular]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     /*cloneBtnActive.querySelector("[data-generar_comprobante]").setAttribute("data-order-id", data.id);
     cloneBtnActive.querySelector("[data-imprimir_comprobante]").setAttribute("data-order-id", data.id);*/
-
-    cloneBtnActive.querySelector("[data-btn_whatsapp]").setAttribute("href", data.url);
+    if (hasPerm('pedidos.enviar_whatsapp')) {
+        cloneBtnActive.querySelector("[data-btn_whatsapp]").setAttribute("href", data.url);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-btn_whatsapp]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     botones.append(cloneBtnActive);
 

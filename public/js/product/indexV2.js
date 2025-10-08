@@ -684,42 +684,74 @@ function renderDataTable(data, activeColumns) {
     clone.querySelector("[data-ingredientes]").innerHTML = data.ingredientes;
     clone.querySelector("[data-estado]").innerHTML = data.estado;
 
+    if (hasPerm('productos.desactivar')) {
+        // Manejo de visibilidad según el estado
+        let cambiarEstadoBtn = clone.querySelector("[data-cambiar_estado]");
+        let desactivarBtns = clone.querySelectorAll("[data-desactivar]");
 
-    // Manejo de visibilidad según el estado
-    let cambiarEstadoBtn = clone.querySelector("[data-cambiar_estado]");
-    let desactivarBtns = clone.querySelectorAll("[data-desactivar]");
+        if (data.state == 0) { // Inactivo -> Mostrar cambiar_estado, ocultar desactivar
+            cambiarEstadoBtn.style.display = "inline-block";
+            desactivarBtns.forEach(btn => btn.style.display = "none");
+        } else { // Activo -> Ocultar cambiar_estado, mostrar desactivar
+            cambiarEstadoBtn.style.display = "none";
+            desactivarBtns.forEach(btn => btn.style.display = "inline-block");
+        }
 
-    if (data.state == 0) { // Inactivo -> Mostrar cambiar_estado, ocultar desactivar
-        cambiarEstadoBtn.style.display = "inline-block";
-        desactivarBtns.forEach(btn => btn.style.display = "none");
-    } else { // Activo -> Ocultar cambiar_estado, mostrar desactivar
-        cambiarEstadoBtn.style.display = "none";
-        desactivarBtns.forEach(btn => btn.style.display = "inline-block");
+        // Configurar atributos
+        cambiarEstadoBtn.setAttribute("data-cambiar_estado", data.state);
+        cambiarEstadoBtn.setAttribute("data-product_id", data.id);
+        cambiarEstadoBtn.setAttribute("data-state", data.textEstado);
+        cambiarEstadoBtn.setAttribute("data-description", data.nombre);
+
+        desactivarBtns.forEach(btn => {
+            btn.setAttribute("data-product_id", data.id);
+            btn.setAttribute("data-description", data.nombre);
+        });
+    } else {
+        let element = clone.querySelector("[data-desactivar]");
+        let element2 = clone.querySelector("[data-cambiar_estado]");
+
+        if (element) {
+            element.style.display = 'none';
+        }
+        if (element2) {
+            element.style.display = 'none';
+        }
     }
 
-    // Configurar atributos
-    cambiarEstadoBtn.setAttribute("data-cambiar_estado", data.state);
-    cambiarEstadoBtn.setAttribute("data-product_id", data.id);
-    cambiarEstadoBtn.setAttribute("data-state", data.textEstado);
-    cambiarEstadoBtn.setAttribute("data-description", data.nombre);
+    if (hasPerm('productos.eliminar')) {
+        clone.querySelector("[data-eliminar]").setAttribute("data-product_id", data.id);
+        clone.querySelector("[data-eliminar]").setAttribute("data-description", data.nombre);
+    } else {
+        let element = clone.querySelector("[data-eliminar]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    desactivarBtns.forEach(btn => {
-        btn.setAttribute("data-product_id", data.id);
-        btn.setAttribute("data-description", data.nombre);
-    });
-
-    clone.querySelector("[data-eliminar]").setAttribute("data-product_id", data.id);
-    clone.querySelector("[data-eliminar]").setAttribute("data-description", data.nombre);
-
-    let url_image = document.location.origin + '/images/products/' + data.image;
-    clone.querySelector("[data-ver_imagen]").setAttribute("data-src", url_image);
-    clone.querySelector("[data-ver_imagen]").setAttribute("data-image", data.id);
+    if (hasPerm('productos.ver_imagen')) {
+        let url_image = document.location.origin + '/images/products/' + data.image;
+        clone.querySelector("[data-ver_imagen]").setAttribute("data-src", url_image);
+        clone.querySelector("[data-ver_imagen]").setAttribute("data-image", data.id);
+    } else {
+        let element = clone.querySelector("[data-ver_imagen]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     clone.querySelector("[data-visibility_price_real]").innerHTML = data.visibility_price_real;
 
-    // Configurar enlaces y botones según los permisos y datos
-    let url = document.location.origin + '/dashboard/editar/producto/' + data.id;
-    clone.querySelector("[data-editar_product]").setAttribute("href", url);
+    if (hasPerm('productos.editar')) {
+        // Configurar enlaces y botones según los permisos y datos
+        let url = document.location.origin + '/dashboard/editar/producto/' + data.id;
+        clone.querySelector("[data-editar_product]").setAttribute("href", url);
+    } else {
+        let element = clone.querySelector("[data-editar_product]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     // Agregar la fila clonada al cuerpo de la tabla
     $("#body-table").append(clone);

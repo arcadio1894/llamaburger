@@ -541,12 +541,26 @@ function renderDataTable(data, activeColumns) {
     clone.querySelector("[data-ingredientes]").innerHTML = data.ingredientes;
     clone.querySelector("[data-estado]").innerHTML = data.estado;
 
-    clone.querySelector("[data-reactivar]").setAttribute("data-product_id", data.id);
-    clone.querySelector("[data-reactivar]").setAttribute("data-description", data.nombre);
+    if (hasPerm('productos.desactivar')) {
+        clone.querySelector("[data-reactivar]").setAttribute("data-product_id", data.id);
+        clone.querySelector("[data-reactivar]").setAttribute("data-description", data.nombre);
+    } else {
+        let element = clone.querySelector("[data-reactivar]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
-    let url_image = document.location.origin + '/images/products/' + data.image;
-    clone.querySelector("[data-ver_imagen]").setAttribute("data-src", url_image);
-    clone.querySelector("[data-ver_imagen]").setAttribute("data-image", data.id);
+    if (hasPerm('productos.ver_imagen')) {
+        let url_image = document.location.origin + '/images/products/' + data.image;
+        clone.querySelector("[data-ver_imagen]").setAttribute("data-src", url_image);
+        clone.querySelector("[data-ver_imagen]").setAttribute("data-image", data.id);
+    } else {
+        let element = clone.querySelector("[data-ver_imagen]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     clone.querySelector("[data-visibility_price_real]").innerHTML = data.visibility_price_real;
 

@@ -1,0 +1,2 @@
+php artisan db:seed --class=MozoSeeder
+php artisan db:seed --class=PermissionSeeder

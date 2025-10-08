@@ -101,9 +101,9 @@
 
 @section('page-title')
     <h5 class="card-title">Listado de Categorías</h5>
-    {{--@can('create_material')--}}
+    @can('locales.crear_tiendas')
         <a href="{{ route('shop.create') }}" class="btn btn-outline-success btn-sm float-right" > <i class="fa fa-plus font-20"></i> Nueva Tienda </a>
-    {{--@endcan--}}
+    @endcan
 @endsection
 
 @section('page-breadcrumb')

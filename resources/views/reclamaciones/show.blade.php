@@ -239,7 +239,9 @@
                 <!-- Botón de Envío -->
                 <div class="form-group text-center mt-0">
                     <a href="{{ route('reclamos.index') }}" class="btn btn-primary">Regresar al listado</a>
+                    @can('reclamos.gestionar')
                     <button type="button" id="btn-submit" data-url="{{ route('reclamos.guardarRespuesta') }}" class="btn btn-success">Guardar respuesta</button>
+                    @endcan
                 </div>
             </div>
         </div>

@@ -74,8 +74,9 @@
 
         <!-- Botones adicionales -->
         {{--<button type="button" id="clearZones" class="btn btn-danger mt-3">Eliminar Zonas</button>--}}
+        @can('locales.crear_zonas')
         <button type="button" id="saveZones" class="btn btn-success mt-3">Guardar Zonas</button>
-
+        @endcan
     </form>
 @endsection
 

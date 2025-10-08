@@ -101,9 +101,9 @@
 
 @section('page-title')
     <h5 class="card-title">Listado de productos</h5>
-    {{--@can('create_material')--}}
+    @can('type_products.crear')
         <a href="{{ route('types.create') }}" class="btn btn-outline-success btn-sm float-right" > <i class="fa fa-plus font-20"></i> Nuevo Tipo </a>
-    {{--@endcan--}}
+    @endcan
 @endsection
 
 @section('page-breadcrumb')

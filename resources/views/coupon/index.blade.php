@@ -101,9 +101,9 @@
 
 @section('page-title')
     <h5 class="card-title">Listado de cupones</h5>
-    {{--@can('create_material')--}}
+    @can('cupones.crear')
         <a href="{{ route('coupons.create') }}" class="btn btn-outline-success btn-sm float-right" > <i class="fa fa-plus font-20"></i> Nuevo cupon </a>
-    {{--@endcan--}}
+    @endcan
 @endsection
 
 @section('page-breadcrumb')

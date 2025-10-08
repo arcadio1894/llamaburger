@@ -152,7 +152,9 @@
         <div class="row">
             <div class="col-12">
                 <button type="reset" class="btn btn-outline-secondary">Cancelar</button>
+                @can('locales.crear_tiendas')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar tienda</button>
+                @endcan
             </div>
         </div>
         <!-- /.card-footer -->

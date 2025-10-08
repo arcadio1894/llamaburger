@@ -343,15 +343,15 @@ function renderDataTable(data) {
     clone.querySelector("[data-solucion]").innerHTML = data.solucion;
 
     // Configurar enlaces y botones según los permisos y datos
-    /*if ($.inArray('update_material', $permissions) !== -1) {*/
+    if (hasPerm('reclamos.gestionar')) {
         let url = document.location.origin + '/dashboard/reclamo/' + data.id+'/revisar/';
         clone.querySelector("[data-ver_reclamo]").setAttribute("href", url);
-    /*} else {
-        let element = clone.querySelector("[data-editar_material]");
+    } else {
+        let element = clone.querySelector("[data-ver_reclamo]");
         if (element) {
             element.style.display = 'none';
         }
-    }*/
+    }
 
     /*if ($.inArray('enable_material', $permissions) !== -1) {*/
         /*clone.querySelector("[data-solucionar]").setAttribute("data-reclamo_id", data.id);

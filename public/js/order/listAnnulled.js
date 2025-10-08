@@ -341,9 +341,24 @@ function renderDataTable(data) {
     var botones = clone.querySelector("[data-buttons]");
 
     var cloneBtnActive = activateTemplate('#template-active');
-    cloneBtnActive.querySelector("[data-ver_detalles]").setAttribute("data-id", data.id);
 
-    cloneBtnActive.querySelector("[data-activar]").setAttribute("data-id", data.id);
+    if (hasPerm('pedidos.ver_detalles')) {
+        cloneBtnActive.querySelector("[data-ver_detalles]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-ver_detalles]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
+
+    if (hasPerm('pedidos.activar_orden')) {
+        cloneBtnActive.querySelector("[data-activar]").setAttribute("data-id", data.id);
+    } else {
+        let element = cloneBtnActive.querySelector("[data-activar]");
+        if (element) {
+            element.style.display = 'none';
+        }
+    }
 
     botones.append(cloneBtnActive);
 

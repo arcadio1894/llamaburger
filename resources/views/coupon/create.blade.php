@@ -147,7 +147,9 @@
         <div class="row">
             <div class="col-12">
                 <button type="reset" class="btn btn-outline-secondary">Cancelar</button>
+                @can('cupones.crear')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar cupón</button>
+                @endcan
             </div>
         </div>
     </form>

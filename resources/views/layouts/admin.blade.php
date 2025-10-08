@@ -387,7 +387,53 @@
                         </ul>
                     </li>
                     @endcan--}}
+                    @can('accesos.enable')
+                    <li class="nav-header">ADMINISTRADOR</li>
+                    @endcan
+                    @can('accesos.enable')
+                    <li class="nav-item has-treeview @yield('openAccess')">
+
+                        <a href="#" class="nav-link @yield('activeAccess')">
+                            <i class="nav-icon fas fa-eye-slash"></i>
+                            <p>
+                                Accesos
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+                            @can('accesos.permissions')
+                                <li class="nav-item">
+                                    <a href="{{ route('permissions.index') }}" class="nav-link @yield('activePermissions')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Permisos</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('accesos.roles')
+                                <li class="nav-item">
+                                    <a href="{{ route('roles.index') }}" class="nav-link @yield('activeRoles')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Roles</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('accesos.users')
+                            <li class="nav-item">
+                                <a href="{{ route('users.index') }}" class="nav-link @yield('activeUser')">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Usuarios Activos</p>
+                                </a>
+                            </li>
+                            @endcan
+
+                        </ul>
+                    </li>
+                    @endcan
+                    @can('pedidos.enable')
                     <li class="nav-header">ORDENES</li>
+                    @endcan
+                    @can('pedidos.enable')
                     <li class="nav-item has-treeview @yield('openOrders')">
                         <a href="#" class="nav-link @yield('activeOrders')">
                             <i class="nav-icon fas fa-receipt"></i>
@@ -397,28 +443,38 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('pedidos.kanban')
                             <li class="nav-item">
                                 <a href="{{route('orders.kanban')}}" class="nav-link @yield('activeKanbanOrders')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Kanban pedidos</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('pedidos.listar')
                             <li class="nav-item">
                                 <a href="{{route('orders.list')}}" class="nav-link @yield('activeListOrders')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listar pedidos</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('pedidos.anulados')
                             <li class="nav-item">
                                 <a href="{{route('orders.list.annulled')}}" class="nav-link @yield('activeListOrdersAnnulled')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Pedidos anulados</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
 
+                    @can('caja.enable')
                     <li class="nav-header">CAJA</li>
+                    @endcan
+                    @can('caja.enable')
                     <li class="nav-item has-treeview @yield('openCashRegister')">
                         <a href="#" class="nav-link @yield('activeCashRegister')">
                             <i class="nav-icon fas fa-truck-loading"></i>
@@ -428,7 +484,7 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
-
+                            @can('caja.ver_caja')
                             <li class="nav-item">
                                 <a href="{{ route('index.cashRegister', 'efectivo') }}" class="nav-link @yield('activeCashRegisterEfectivo')">
                                     <i class="far fa-circle nav-icon"></i>
@@ -441,10 +497,14 @@
                                     <p>Caja Bancario</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
-
+                    @endcan
+                    @can('locales.enable_tiendas')
                     <li class="nav-header">MODULO DE LOCALES</li>
+                    @endcan
+                    @can('locales.enable_tiendas')
                     <li class="nav-item has-treeview @yield('openShops')">
                         <a href="#" class="nav-link @yield('activeShop')">
                             <i class="nav-icon fas fa-store"></i>
@@ -454,21 +514,26 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
-
+                            @can('locales.listar_tiendas')
                             <li class="nav-item">
                                 <a href="{{ route('shop.index') }}" class="nav-link @yield('activeListShop')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listado de tiendas</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('locales.crear_tiendas')
                             <li class="nav-item">
                                 <a href="{{ route('shop.create') }}" class="nav-link @yield('activeCreateShop')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear Tiendas</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
+                    @can('locales.enable_zonas')
                     <li class="nav-item has-treeview @yield('openZone')">
                         <a href="#" class="nav-link @yield('activeZone')">
                             <i class="nav-icon fas fa-store"></i>
@@ -478,25 +543,55 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('locales.crear_zonas')
                             <li class="nav-item">
                                 <a href="{{ route('zones.create') }}" class="nav-link @yield('activeCreateZone')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear Zona</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('locales.gestionar_zonas')
                             <li class="nav-item">
                                 <a href="{{ route('zones.index') }}" class="nav-link @yield('activeListZone')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Gestionar Zonas</p>
                                 </a>
                             </li>
-
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
+                    @can('espacios.enable_salas')
+                    <li class="nav-header">ESPACIOS</li>
+                    @endcan
+                    @can('espacios.enable_salas')
+                    <li class="nav-item has-treeview @yield('openSalas')">
+                        <a href="#" class="nav-link @yield('activeSalas')">
+                            <i class="nav-icon fas fa-utensils"></i>
+                            <p>
+                                Salas
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            @can('espacios.enable_salas')
+                            <li class="nav-item">
+                                <a href="{{route('salas.index')}}" class="nav-link @yield('activeListSalas')">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Mesas</p>
+                                </a>
+                            </li>
+                            @endcan
+                        </ul>
+                    </li>
+                    @endcan
 
-
+                    @can('mantenedores.enable')
                     <li class="nav-header">MANTENEDORES</li>
+                    @endcan
 
+                    @can('sliders.enable')
                     <li class="nav-item has-treeview @yield('openSliders')">
                         <a href="#" class="nav-link @yield('activeSliders')">
                             <i class="nav-icon fas fa-images"></i>
@@ -506,21 +601,27 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('sliders.listar')
                             <li class="nav-item">
                                 <a href="{{route('sliders.index')}}" class="nav-link @yield('activeListSliders')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listado imágenes</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('sliders.crear')
                             <li class="nav-item">
                                 <a href="{{route('sliders.create')}}" class="nav-link @yield('activeCreateSliders')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear Imagen</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
 
+                    @can('cupones.enable')
                     <li class="nav-item has-treeview @yield('openCoupons')">
                         <a href="#" class="nav-link @yield('activeCoupons')">
                             <i class="nav-icon fas fa-ticket-alt"></i>
@@ -530,20 +631,27 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('cupones.listar')
                             <li class="nav-item">
                                 <a href="{{route('coupons.index')}}" class="nav-link @yield('activeListCoupons')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listar cupones</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('cupones.crear')
                             <li class="nav-item">
                                 <a href="{{route('coupons.create')}}" class="nav-link @yield('activeCreateCoupons')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear cupones</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
+
+                    @can('productos.enable')
                     <li class="nav-item has-treeview @yield('openProducts')">
                         <a href="#" class="nav-link @yield('activeProducts')">
                             <i class="nav-icon fas fa-pizza-slice"></i>
@@ -553,26 +661,34 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('productos.listar')
                             <li class="nav-item">
                                 <a href="{{route('products.list')}}" class="nav-link @yield('activeListProducts')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listar productos</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('productos.crear')
                             <li class="nav-item">
                                 <a href="{{route('product.create')}}" class="nav-link @yield('activeLCreateProducts')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear productos</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('productos.ver_eliminados')
                             <li class="nav-item">
                                 <a href="{{route('products.list.deleted')}}" class="nav-link @yield('activeListDeletedProducts')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Productos eliminados</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
+                    @can('type_products.enable')
                     <li class="nav-item has-treeview @yield('openTypes')">
                         <a href="#" class="nav-link @yield('activeTypes')">
                             <i class="nav-icon fas fa-list"></i>
@@ -582,21 +698,26 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('type_products.listar')
                             <li class="nav-item">
                                 <a href="{{route('types.index')}}" class="nav-link @yield('activeListTypes')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listar tipos</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('type_products.crear')
                             <li class="nav-item">
                                 <a href="{{route('types.create')}}" class="nav-link @yield('activeCreateTypes')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear tipo</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
-
+                    @endcan
+                    @can('categorias.enable')
                     <li class="nav-item has-treeview @yield('openCategories')">
                         <a href="#" class="nav-link @yield('activeCategories')">
                             <i class="nav-icon fas fa-tags"></i>
@@ -606,21 +727,26 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('categorias.listar')
                             <li class="nav-item">
                                 <a href="{{route('categories.index')}}" class="nav-link @yield('activeListCategories')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listar Categorías</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('categorias.crear')
                             <li class="nav-item">
                                 <a href="{{route('categories.create')}}" class="nav-link @yield('activeCreateCategories')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Crear Categoría</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
-
+                    @endcan
+                    @can('rewards.enable')
                     <li class="nav-item has-treeview @yield('openRewards')">
                         <a href="#" class="nav-link @yield('activeRewards')">
                             <i class="nav-icon fas fa-fire"></i>
@@ -630,17 +756,22 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('rewards.listar')
                             <li class="nav-item">
                                 <a href="{{route('milestones.index')}}" class="nav-link @yield('activeListRewards')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Listado Hitos</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
 
+                    @can('reclamos.enable')
                     <li class="nav-header">CENTRO DE AYUDA</li>
-
+                    @endcan
+                    @can('reclamos.enable')
                     <li class="nav-item has-treeview @yield('openHelpCenter')">
                         <a href="#" class="nav-link @yield('activeReclamos')">
                             <i class="nav-icon fas fa-credit-card"></i>
@@ -650,20 +781,25 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('reclamos.pendientes')
                             <li class="nav-item">
                                 <a href="{{route('reclamos.index')}}" class="nav-link @yield('activeReclamosIndex')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Reclamos pendientes</p>
                                 </a>
                             </li>
+                            @endcan
+                            @can('reclamos.finalizados')
                             <li class="nav-item">
                                 <a href="{{route('reclamos.finalizados')}}" class="nav-link @yield('activeReclamosDelete')">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Reclamos finalizados</p>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </li>
+                    @endcan
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
@@ -747,6 +883,44 @@
 <!-- AdminLTE App -->
 <script src="{{ asset('admin/dist/js/adminlte.min.js') }}"></script>
 {{--<script src="{{ asset('/js/layout/admin2.js') }}"></script>--}}
+
+<script>
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+</script>
+@php
+    $__perms = auth()->check()
+        ? auth()->user()->getAllPermissions()->pluck('name')->toArray()  // o getPermissionsViaRoles()
+        : [];
+@endphp
+
+<script>
+    // disponible en TODO el sitio y cualquier parcial inyectado por AJAX
+    window.PERMISSIONS = @json($__perms);
+</script>
+<script>
+    function hasPerm(name){
+        if (!Array.isArray(window.PERMISSIONS)) return false;
+        return window.PERMISSIONS.indexOf(name) !== -1;
+    }
+    function hasAny(perms){
+        if (!Array.isArray(perms) || perms.length===0) return false;
+        return perms.some(hasPerm);
+    }
+    function hasAll(perms){
+        if (!Array.isArray(perms) || perms.length===0) return false;
+        return perms.every(hasPerm);
+    }
+    function escAttr(s){
+        return String(s).replace(/[&<>"']/g, m => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'
+        }[m]));
+    }
+</script>
 
 @yield('scripts')
 

@@ -125,7 +125,9 @@
         <div class="row">
             <div class="col-12">
                 <button type="reset" class="btn btn-outline-secondary">Cancelar</button>
+                @can('rewards.crear')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar Hito</button>
+                @endcan
             </div>
         </div>
         <!-- /.card-footer -->

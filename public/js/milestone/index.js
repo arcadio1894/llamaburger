@@ -235,25 +235,25 @@ function renderDataTable(data) {
     clone.querySelector("[data-flames]").innerHTML = data.flames;
 
     // Configurar enlaces y botones según los permisos y datos
-    /*if ($.inArray('update_material', $permissions) !== -1) {*/
+    if (hasPerm('rewards.editar')) {
         let url = document.location.origin + '/dashboard/modificar/hito/' + data.id;
         clone.querySelector("[data-editar_milestone]").setAttribute("href", url);
-    /*} else {
-        let element = clone.querySelector("[data-editar_material]");
+    } else {
+        let element = clone.querySelector("[data-editar_milestone]");
         if (element) {
             element.style.display = 'none';
         }
-    }*/
+    }
 
-    /*if ($.inArray('enable_material', $permissions) !== -1) {*/
+    if (hasPerm('rewards.eliminar')) {
         clone.querySelector("[data-eliminar]").setAttribute("data-id", data.id);
         clone.querySelector("[data-eliminar]").setAttribute("data-title", data.title);
-    /*} else {
-        let element = clone.querySelector("[data-deshabilitar]");
+    } else {
+        let element = clone.querySelector("[data-eliminar]");
         if (element) {
             element.style.display = 'none';
         }
-    }*/
+    }
 
     // Agregar la fila clonada al cuerpo de la tabla
     $("#body-table").append(clone);

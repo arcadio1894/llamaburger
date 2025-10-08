@@ -66,8 +66,12 @@
 
 @section('page-title')
     <div class="btn-group float-right">
+        @can('caja.crear_ingreso')
         <button type="button" id="btn-incomeCashRegister" class="btn btn-success">Ingreso</button>
+        @endcan
+        @can('caja.crear_egreso')
         <button type="button" id="btn-expenseCashRegister" class="btn btn-danger">Egreso</button>
+        @endcan
     </div>
 @endsection
 
@@ -155,7 +159,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        @can('caja.abrir')
                         <button type="button" id="btn_open" class="btn btn-success">Aperturar Caja</button>
+                        @endcan
                     </div>
                 </form>
             </div>
@@ -183,7 +189,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        @can('caja.cerrar')
                         <button type="button" id="btn_close" class="btn btn-danger">Cerrar Caja</button>
+                        @endcan
                     </div>
                 </form>
             </div>
@@ -214,7 +222,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        @can('caja.crear_ingreso')
                         <button type="button" id="btn_ingreso" class="btn btn-success">Guardar Ingreso</button>
+                        @endcan
                     </div>
                 </form>
             </div>
@@ -245,7 +255,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        @can('caja.crear_egreso')
                         <button type="button" id="btn_egreso" class="btn btn-danger">Guardar Egreso</button>
+                        @endcan
                     </div>
                 </form>
             </div>
@@ -274,7 +286,9 @@
                         </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        @can('caja.regularize')
                         <button type="button" id="btn_regularizar" class="btn btn-success">Regularizar Venta POS</button>
+                        @endcan
                     </div>
                 </form>
             </div>

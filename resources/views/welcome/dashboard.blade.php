@@ -41,13 +41,15 @@
 @endsection
 
 @section('content')
-
+    @can('locales.abrir_cerrar_tiendas')
     <div class="form-group">
         <label for="btn-status"> Estado de la tienda </label> <br>
         <input id="btn-status" type="checkbox" data-status="{{ $status }}" name="status" {{ ($status == 1) ? 'checked':'' }} data-bootstrap-switch data-off-color="danger" data-on-text="ABIERTA" data-off-text="CERRADA" data-on-color="success">
     </div>
+    @endcan
 
     <div class="row">
+        @can('dashboard.view_users_actives')
         <div class="col-lg-3 col-6">
             <!-- small box -->
             <div class="small-box bg-warning">
@@ -61,7 +63,9 @@
                 </div>
             </div>
         </div>
+        @endcan
 
+        @can('dashboard.view_users_registered')
         <div class="col-lg-3 col-6">
             <!-- small box -->
             <div class="small-box bg-primary">
@@ -75,10 +79,11 @@
                 </div>
             </div>
         </div>
-
+        @endcan
     </div>
 
     <div class="row">
+        @can('dashboard.graph_type_users')
         <div class="col-md-6">
             <!-- TIPO USUARIO CHART -->
             <div class="card card-success">
@@ -134,6 +139,8 @@
                 </div>
             </div>
         </div>
+        @endcan
+        @can('dashboard.graph_sale')
         <div class="col-md-6">
 
             <div class="card bg-gradient-info">
@@ -181,10 +188,11 @@
             </div>
             <!-- /.card -->
         </div>
-
+        @endcan
     </div>
 
     <div class="row">
+        @can('dashboard.graph_income_output')
         <div class="col-md-6">
 
             <div class="card bg-gradient-info">
@@ -229,9 +237,11 @@
             </div>
             <!-- /.card -->
         </div>
+        @endcan
     </div>
 
     <div class="row">
+        @can('dashboard.graph_promotions_usage')
         <div class="col-md-6">
             <div class="card card-success">
                 <div class="card-header">
@@ -274,6 +284,8 @@
             </div>
             <!-- /.card -->
         </div>
+        @endcan
+        @can('dashboard.graph_customers_top')
         <div class="col-md-6">
             <div class="card card-success">
                 <div class="card-header">
@@ -296,7 +308,7 @@
             </div>
 
         </div>
-
+        @endcan
 
     </div>
 

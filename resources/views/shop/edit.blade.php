@@ -53,7 +53,7 @@
         <li class="breadcrumb-item">
             <a href="{{ route('shop.index') }}"><i class="fa fa-archive"></i> Tiendas</a>
         </li>
-        <li class="breadcrumb-item"><i class="fa fa-plus-circle"></i> Nuevo</li>
+        <li class="breadcrumb-item"><i class="fa fa-plus-circle"></i> Editar</li>
     </ol>
 @endsection
 
@@ -167,7 +167,9 @@
         <div class="row">
             <div class="col-12">
                 <button type="reset" class="btn btn-outline-secondary">Cancelar</button>
+                @can('locales.editar_tiendas')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar datos de la tienda</button>
+                @endcan
             </div>
         </div>
         <!-- /.card-footer -->

@@ -388,35 +388,44 @@ function renderDataTable(data, activeColumns) {
     clone.querySelector("[data-estado]").innerHTML = data.specialText;
 
     // Configurar enlaces y botones según los permisos y datos
-    /*if ($.inArray('update_material', $permissions) !== -1) {*/
+    if (hasPerm('cupones.editar')) {
         let url = document.location.origin + '/dashboard/coupons/' + data.id+'/edit/';
         clone.querySelector("[data-editar_coupon]").setAttribute("href", url);
-    /*} else {
-        let element = clone.querySelector("[data-editar_material]");
+    } else {
+        let element = clone.querySelector("[data-editar_coupon]");
         if (element) {
             element.style.display = 'none';
         }
-    }*/
+    }
 
     let button = clone.querySelector("[data-cambiar_estado]");
 
-    // Obtener estado
-    let state = data.status; // "active" o "inactive"
+    // Mostrar / ocultar según permiso
+    if (hasPerm('cupones.cambiar_estado')) {
+        // Obtener estado
+        let state = data.status; // "active" o "inactive"
 
-    // Cambiar atributos según el estado
-    button.setAttribute("data-coupon_id", data.id);
-    button.setAttribute("data-description", data.nombre);
-    button.setAttribute("data-state", data.status);
+        // Setear atributos
+        button.setAttribute("data-coupon_id", data.id);
+        button.setAttribute("data-description", data.nombre);
+        button.setAttribute("data-state", state);
 
-    // Ajustar clases e ícono
-    if (state == "active") {
-        button.classList.add("btn-outline-success");
-        button.classList.remove("btn-outline-danger");
-        button.innerHTML = '<i class="fas fa-bell"></i>'; // Ícono de campana normal
+        // Ajustar clases e ícono según estado
+        if (state === "active") {
+            button.classList.add("btn-outline-success");
+            button.classList.remove("btn-outline-danger");
+            button.innerHTML = '<i class="fas fa-bell"></i>'; // Ícono campana
+        } else {
+            button.classList.add("btn-outline-danger");
+            button.classList.remove("btn-outline-success");
+            button.innerHTML = '<i class="fas fa-bell-slash"></i>'; // Ícono campana slash
+        }
+
+        button.style.display = ''; // aseguramos que sea visible
     } else {
-        button.classList.add("btn-outline-danger");
-        button.classList.remove("btn-outline-success");
-        button.innerHTML = '<i class="fas fa-bell-slash"></i>'; // Ícono de campana con slash
+        // Sin permiso → eliminar o esconder
+        button.remove();
+        // o: button.style.display = 'none';
     }
 
     // Agregar la fila clonada al cuerpo de la tabla

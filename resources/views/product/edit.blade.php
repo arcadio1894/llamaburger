@@ -199,6 +199,7 @@
         </div>
 
         <div class="row">
+            @can('productos.agregar_opciones')
             <div class="col-md-8">
                 <div class="card card-success">
                     <div class="card-header">
@@ -290,7 +291,7 @@
                 </div>
 
             </div>
-
+            @endcan
             <div class="col-md-4">
                 <!-- /.card -->
                 <div class="card card-primary">
@@ -340,7 +341,9 @@
         <div class="row">
             <div class="col-12">
                 <a href="{{ route('products.list') }}" class="btn btn-outline-secondary">Cancelar</a>
+                @can('productos.crear')
                 <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar producto</button>
+                @endcan
             </div>
         </div>
         <!-- /.card-footer -->

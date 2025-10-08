@@ -90,7 +90,9 @@
         <div class="row">
             <div class="col-12">
                 <button type="reset" class="btn btn-outline-secondary">Cancelar</button>
-                <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar iamgen</button>
+                @can('sliders.crear')
+                <button type="button" id="btn-submit" class="btn btn-outline-success float-right">Guardar imagen</button>
+                @endcan
             </div>
 
         </div>
