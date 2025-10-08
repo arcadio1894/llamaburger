@@ -29,7 +29,7 @@ class UserController extends Controller
         $per = (int)($request->get('per_page', 20));
         $per = max(5, min(50, $per));
 
-        $query = User::query()->withTrashed()->orderBy('id','desc'); // 👈 incluye eliminados
+        $query = User::query()->withTrashed()->orderBy('id','asc'); // 👈 incluye eliminados
 
         if ($q !== '') {
             $query->where(function($w) use ($q){
