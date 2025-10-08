@@ -2,6 +2,8 @@
 
 return [
 
+    'default_guard' => 'web',   // <- agrega esto
+
     'models' => [
 
         /*
