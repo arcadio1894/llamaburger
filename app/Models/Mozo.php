@@ -9,7 +9,7 @@ class Mozo extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre','activo'];
+    protected $fillable = ['nombre','activo', 'user_id'];
 
     public function user() {
         return $this->belongsTo(User::class);
