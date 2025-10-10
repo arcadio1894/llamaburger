@@ -125,6 +125,8 @@ class AtencionController extends Controller
                 'name'       => (string) $it->nombre,
                 'price'      => (float) $it->precio_unit,
                 'qty'        => (int) $it->cantidad,
+                'opciones'   => $it->opciones ?? null,  // 🔰
+                'has_options'=> $it->product ? $it->product->has_options : (!empty($it->opciones)), //
             ];
         })->values()->all();
 
@@ -202,7 +204,7 @@ class AtencionController extends Controller
     public function productos()
     {
         // Obtener categorías activas con sus productos
-        $categories = Category::with(['products' => function ($q) {
+        /*$categories = Category::with(['products' => function ($q) {
             $q->where('enable_status', 1)
                 ->with(['productTypes.type' => function ($t) {
                     $t->where('active', 1);
@@ -215,6 +217,56 @@ class AtencionController extends Controller
         return response()->json([
             'ok' => true,
             'categories' => $categories,
+        ]);*/
+        $categories = Category::with([
+            'products' => function($q){
+                $q->withCount(['options as options_count' => function($q){ $q->where('active',1); }]);
+                // si vas a abrir modal con un fetch aparte, basta el flag:
+                $q->with(['options' => function($q) {
+                    $q->where('active',1)->with(['selections' => function($q){
+                        $q->where('active',1)->with('product:id,full_name,unit_price,image');
+                    }]);
+                }]);
+            }
+        ])->get();
+
+        // Respuesta (ejemplo)
+        return response()->json([
+            'ok' => true,
+            'categories' => $categories->map(function($cat){
+                return [
+                    'id' => $cat->id,
+                    'name' => $cat->name,
+                    'products' => $cat->products->map(function($p){
+                        return [
+                            'id'           => $p->id,
+                            'name'         => $p->name,
+                            'full_name'    => $p->full_name,
+                            'unit_price'   => $p->unit_price,
+                            'image'        => $p->image,
+                            'has_options'  => $p->has_options, // 🔰 clave para el front
+                            // opcional: mandar toda la estructura si prefieres
+                            'options'      => $p->options->map(function($o){
+                                return [
+                                    'id'          => $o->id,
+                                    'description' => $o->description, // título del grupo
+                                    'quantity'    => (int) $o->quantity, // min/max exacto (ver abajo)
+                                    'type'        => $o->type, // 'picker' | 'addon' | 'texto' (ver mapeo)
+                                    'selections'  => $o->selections->map(function($s){
+                                        return [
+                                            'id'               => $s->id,
+                                            'product_id'       => $s->product_id,
+                                            'name'             => $s->product->name ?? '',
+                                            'delta'            => (float) ($s->additional_price ?? 0),
+                                            'image'            => $s->product->image ?? null,
+                                        ];
+                                    })->values(),
+                                ];
+                            })->values(),
+                        ];
+                    })->values(),
+                ];
+            })->values(),
         ]);
     }
 }

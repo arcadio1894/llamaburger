@@ -23,6 +23,8 @@ class Product extends Model
         'date_reactivate'
     ];
 
+    protected $appends = ['has_options', 'price_default'];
+
     public function options()
     {
         return $this->hasMany(Option::class);
@@ -55,6 +57,15 @@ class Product extends Model
             return $this->unit_price;
         }
 
+    }
+
+    public function getHasOptionsAttribute()
+    {
+        // rápido y barato (si no cargaste options, cuenta en DB; si sí, usa la colección)
+        if ($this->relationLoaded('options')) {
+            return $this->options->count() > 0;
+        }
+        return $this->options()->count() > 0;
     }
 
     protected static function boot()

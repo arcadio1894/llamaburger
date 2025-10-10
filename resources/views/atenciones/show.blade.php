@@ -120,22 +120,124 @@
         /* eliminar doble scroll y ocultar FAB al abrir aside */
         body.control-sidebar-slide-open{ overflow: hidden; }
         body.control-sidebar-slide-open .order-fab{ display: none !important; }
+
+        /* ===== Modal base ===== */
+        .modal{
+            position:fixed; inset:0; z-index:1060;
+            display:flex; align-items:flex-end; justify-content:center;
+            background:rgba(0,0,0,.35);
+        }
+        .modal[hidden]{display:none}
+        .modal__card{
+            background:#fff; width:100%; max-width:720px;
+            border-radius:16px 16px 0 0; overflow:hidden;
+            box-shadow:0 16px 40px rgba(0,0,0,.25);
+        }
+
+        /* ===== Header ===== */
+        .modal__header{
+            display:flex; align-items:center; gap:8px; justify-content:space-between;
+            padding:12px 14px; border-bottom:1px solid #eef1f4;
+        }
+        .modal__title{
+            margin:0; font-size:1.05rem; font-weight:800; line-height:1.25; flex:1;
+            overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+        }
+        .po-unit{
+            font-size:.75rem; font-weight:700; color:#374151;
+            background:#f3f4f6; border-radius:999px; padding:4px 8px; white-space:nowrap;
+        }
+        .modal__close{
+            border:none; background:#eef2f7; border-radius:10px; padding:6px 10px; font-weight:700;
+        }
+
+        /* ===== Body (scroll only aquí) ===== */
+        .modal__body{
+            padding:10px 12px; overflow:auto;
+            max-height: min(60dvh, 520px);
+        }
+
+        /* ===== Group ===== */
+        .group{margin-bottom:12px}
+        .group__title{font-weight:800; margin-bottom:4px}
+        .group__hint{font-size:.82rem; color:#6b7280; margin-bottom:8px}
+
+        /* ===== Opción (fila táctil) ===== */
+        .po-item{
+            display:flex; align-items:center; gap:10px;
+            padding:12px; border:1px solid #e7e9ee; border-radius:12px; margin-bottom:10px;
+            background:#fff; transition:.15s ease; cursor:pointer;
+        }
+        .po-item:hover{background:#f9fafb}
+        .po-item input{width:18px; height:18px}
+        .po-item__text{flex:1; line-height:1.35; font-weight:600}
+        .po-item__delta{font-weight:700; white-space:nowrap; color:#374151}
+
+        /* ===== Footer fijo ===== */
+        .modal__footer{
+            position:sticky; bottom:0; z-index:1;
+            display:flex; align-items:center; justify-content:space-between; gap:10px;
+            padding:10px 12px; border-top:1px solid #eef1f4; background:#fff;
+        }
+        .po-summary{
+            display:flex; align-items:center; gap:6px;
+            flex:1; min-width:0; flex-wrap:nowrap;
+        }
+        .po-summary input#po-qty{
+            width:48px; text-align:center;
+            border:1px solid #d1d5db;
+            border-radius:10px;
+            padding:6px 0;
+            font-weight:700;
+        }
+        .po-summary [data-po-qty-inc],
+        .po-summary [data-po-qty-dec]{
+            border:1px solid #d1d5db;
+            background:#fff;
+            border-radius:10px;
+            width:34px; height:34px;
+            font-weight:800;
+            line-height:1;
+        }
+        .po-summary span.label-icon{
+            font-size:1rem; color:#6b7280;
+        }
+        #po-total{
+            font-weight:800;
+            font-size:.95rem;
+        }
+        #po-save{
+            flex-shrink:0;
+            min-width:46px;
+            height:42px;
+            border-radius:12px;
+            padding:.6rem .8rem;
+            font-weight:800;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        #po-save i{font-size:1rem;}
+        @media (max-width:480px){
+            #po-save{min-width:100px; font-size:.9rem;}
+        }
+
+        /* ===== Ajuste “full sheet” en móviles pequeños ===== */
+        @media (max-width: 480px){
+            .modal{align-items:flex-end}
+            .modal__card{border-radius:16px 16px 0 0}
+            .modal__body{max-height: calc(70dvh - 0px);}
+        }
+
+        /* Safe area iOS */
+        .modal__footer{ padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
     </style>
 @endsection
 
 @section('content')
     <div class="card">
-        {{--<div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <strong>Mesa:</strong> {{ $atencion->mesa->nombre }} |
-                <strong>Mozo:</strong> {{ $atencion->mozo->nombre }} |
-                <strong>Personas:</strong> {{ $atencion->personas }}
-            </div>
-            <button class="btn btn-danger" id="btn-desocupar">Desocupar mesa</button>
-        </div>
-        <div class="card-body">
 
-        </div>--}}
         <h4>Mesa {{ $atencion->mesa->nombre }} — Mozo: {{ $atencion->mozo->nombre }}</h4>
 
         <ul class="nav nav-tabs mb-2">
@@ -233,6 +335,30 @@
             <div id="order-aside-body" class="cs-body"></div>
         </div>
     </aside>
+
+    <!-- pon esto al final de tu Blade -->
+    <div id="productOptionsModal" class="modal" hidden>
+        <div class="modal__card">
+            <header class="modal__header">
+                <h3 id="po-title" class="modal__title">Configurar producto</h3>
+                <span id="po-unit" class="po-unit">S/ 0.00</span>
+                <button class="modal__close" data-po-close>&times;</button>
+            </header>
+            <div id="po-body" class="modal__body"></div>
+            <footer class="modal__footer">
+                <div class="po-summary">
+                    <span class="label-icon"><i class="fas fa-sort-numeric-up"></i></span>
+                    <button data-po-qty-dec>-</button>
+                    <input id="po-qty" type="number" value="1" min="1">
+                    <button data-po-qty-inc>+</button>
+                    <strong id="po-total">S/ 0.00</strong>
+                </div>
+                <button id="po-save" class="btn btn-primary" disabled>
+                    <i class="fas fa-check"></i>
+                </button>
+            </footer>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -246,269 +372,4 @@
 
     <script src="{{ asset('js/atenciones/show.js') }}"></script>
 
-    {{--<script>
-        $('#btn-desocupar').on('click', function(){
-            $.post(`/dashboard/atenciones/{{ $atencion->id }}/cerrar`, {}, function(resp){
-                if(resp.ok){
-                    toastr.success(resp.msg);
-                    window.location = resp.redirect_url; // vuelve a la lista de salas/mesas
-                } else {
-                    toastr.error(resp.msg || 'No se pudo desocupar la mesa');
-                }
-            }, 'json').fail(() => toastr.error('Error'));
-        });
-
-    </script>
-    <script>
-        // Helpers de seguridad (ya los puedes tener)
-        function safe(val, fb=''){ return (val===undefined || val===null) ? fb : val; }
-
-        // Imagen pública (ajusta base si cambias carpeta)
-        function productImageUrl(p) {
-            const file = safe(p.image, '');
-            if (/^https?:\/\//i.test(file)) return file;
-            const basePath = '/images/products/';  // ✅ sin /public
-            return file ? (basePath + file) : '/img/noimage.png';
-        }
-
-        // Precio a mostrar: mínimo de product_types si existen; si no, unit_price
-        function productDisplayPrice(p) {
-            let price = null;
-
-            if (Array.isArray(p.product_types) && p.product_types.length > 0) {
-                const min = p.product_types.reduce((acc, cur) => {
-                    const val = parseFloat(cur.price);
-                    if (isNaN(val)) return acc;
-                    return acc === null ? val : Math.min(acc, val);
-                }, null);
-                price = min;
-            } else {
-                const val = parseFloat(p.unit_price);
-                price = isNaN(val) ? null : val;
-            }
-
-            //if (Number(p.visibility_price_real) === 0) return null;
-            return price;
-        }
-
-        // Estado global simple
-        let ALL_CATEGORIES = [];
-        let SELECTED_CAT = 'all';
-        let QUERY = '';
-
-        // Carga inicial
-        $(function(){
-            $.get('/dashboard/mesa/productos', function(res){
-                if(!res.ok) return toastr.error('No se pudo cargar productos');
-                ALL_CATEGORIES = res.categories || [];
-                renderCategories(ALL_CATEGORIES);
-                renderFiltered(); // "Todas" + sin búsqueda
-            });
-
-            // Click categoría
-            $(document).on('click', '.btn-cat', function(){
-                $('.btn-cat').removeClass('active');
-                $(this).addClass('active');
-                SELECTED_CAT = $(this).data('id');   // 'all' o id numérico
-                renderFiltered();
-            });
-
-            // Búsqueda (debounce)
-            const debounced = debounce(function(val){
-                QUERY = (val || '').trim().toLowerCase();
-                renderFiltered();
-            }, 250);
-
-            $('#prod-search').on('input', function(){
-                debounced(this.value);
-            });
-
-            // Limpiar búsqueda
-            $('#btn-clear-search').on('click', function(){
-                $('#prod-search').val('');
-                QUERY = '';
-                renderFiltered();
-            });
-        });
-
-        // Render categorías
-        function renderCategories(cats){
-            let html = `<button type="button" class="btn btn-outline-dark btn-sm btn-cat active" data-id="all">Todas</button>`;
-            cats.forEach(c => {
-                html += `<button type="button" class="btn btn-outline-dark btn-sm btn-cat" data-id="${c.id}">${safe(c.name,'(Sin nombre)')}</button>`;
-            });
-            $('#categories').html(html);
-        }
-
-        // Aplica categoría + búsqueda
-        function renderFiltered(){
-            let products = [];
-
-            if (SELECTED_CAT === 'all') {
-                products = ALL_CATEGORIES.flatMap(c => c.products || []);
-            } else {
-                const cat = ALL_CATEGORIES.find(c => String(c.id) === String(SELECTED_CAT));
-                products = cat ? (cat.products || []) : [];
-            }
-
-            if (QUERY) {
-                products = products.filter(p => {
-                    const name = (safe(p.full_name, '') || safe(p.name,'')).toString().toLowerCase();
-                    return name.includes(QUERY);
-                });
-            }
-
-            renderProducts(products);
-        }
-
-        // Render productos mini
-        function renderProducts(products){
-            if (!Array.isArray(products) || products.length === 0) {
-                $('#products').html('<div class="text-center text-muted">Sin productos</div>');
-                return;
-            }
-
-            let html = '';
-            products.forEach(p => {
-                const name  = safe(p.full_name, safe(p.name,'Producto'));
-                const img   = productImageUrl(p);
-                const price = productDisplayPrice(p); // puede ser null si ocultas precio
-
-                html += `
-                  <div class="card product-card"
-                       data-id="${p.id}"
-                       data-name="${escAttr(name)}"
-                       data-price="${price === null ? '' : price}">
-                    <img src="${img}" class="card-img-top" alt="${escAttr(name)}">
-                    <div class="card-body p-2 text-center">
-                      <div class="name">${escAttr(name)}</div>
-                      <div class="price">${price===null ? '' : ('S/ ' + Number(price).toFixed(2))}</div>
-                    </div>
-                  </div>`;
-            });
-
-            $('#products').html(html);
-        }
-
-        // Debounce helper
-        function debounce(fn, wait){
-            let t; return function(...args){
-                clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), wait);
-            }
-        }
-
-        // TODO: implementa addToOrder(productId)
-        function addToOrder(product){
-            const name  = product.name || product.full_name || product.title || 'Producto';
-            const price = parseFloat(product.price ?? product.unit_price ?? 0) || 0;
-
-            const idx = ORDER.items.findIndex(it => it.id === product.id);
-            if (idx === -1) {
-                ORDER.items.push({ id: product.id, name, qty: 1, price });
-            } else {
-                ORDER.items[idx].qty += 1;
-            }
-            renderOrder();
-        }
-
-        // Captura click en cualquier .product-card
-        $(document).on('click', '.product-card', function(){
-            const id    = parseInt(this.dataset.id, 10);
-            const name  = this.dataset.name || 'Producto';
-            const price = parseFloat(this.dataset.price);
-
-            const prod = {
-                id,
-                name,
-                unit_price: isNaN(price) ? 0 : price
-            };
-
-            addToOrder(prod);
-        });
-    </script>
-    <script>
-        // Estado del pedido (ejemplo simple)
-        const ORDER = {
-            items: [] // { id, name, qty, price }
-        };
-
-        // Añadir al pedido (llámalo desde tu click en producto)
-        function addToOrder(product){
-            // product: {id, full_name/name, unit_price}
-            const idx = ORDER.items.findIndex(it => it.id === product.id);
-            if (idx === -1) {
-                ORDER.items.push({ id: product.id, name: product.full_name || product.name, qty: 1, price: parseFloat(product.unit_price) || 0 });
-            } else {
-                ORDER.items[idx].qty += 1;
-            }
-            renderOrder();
-        }
-
-        // Quitar / cambiar cantidad
-        function incItem(id, d=1){
-            const it = ORDER.items.find(x=>x.id===id);
-            if(!it) return;
-            it.qty += d;
-            if (it.qty <= 0) ORDER.items = ORDER.items.filter(x=>x.id!==id);
-            renderOrder();
-        }
-
-        function formatMoney(n){ return 'S/ ' + (Number(n||0)).toFixed(2); }
-
-        // Render pedido en ambos contenedores
-        function renderOrder(){
-            // cuerpo
-            const html = ORDER.items.map(it => `
-                  <div class="media align-items-center mb-2">
-                    <div class="media-body">
-                      <div class="d-flex justify-content-between">
-                        <strong>${it.name}</strong>
-                        <span>${formatMoney(it.price)}</span>
-                      </div>
-                      <div class="d-flex align-items-center mt-1">
-                        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="incItem(${it.id}, -1)"><i class="fas fa-minus"></i></button>
-                        <span>${it.qty}</span>
-                        <button class="btn btn-xs btn-outline-secondary ml-1" onclick="incItem(${it.id}, +1)"><i class="fas fa-plus"></i></button>
-                        <span class="ml-auto text-muted small">${formatMoney(it.qty * it.price)}</span>
-                      </div>
-                    </div>
-                  </div>
-                `).join('');
-
-            // Totales (lógica real a tu gusto)
-            const sub = ORDER.items.reduce((s,it)=> s + it.qty*it.price, 0);
-            const dscto = 0;
-            const igv = sub * 0.18;
-            const tot = sub - dscto + igv;
-
-            // Desktop
-            $('#order-panel-body').html(html || '<div class="text-muted">Sin items</div>');
-            $('#ord-subtotal').text(formatMoney(sub));
-            $('#ord-discount').text(formatMoney(dscto));
-            $('#ord-igv').text(formatMoney(igv));
-            $('#ord-total').text(formatMoney(tot));
-
-            // Aside
-            $('#order-aside-body').html(html || '<div class="text-muted">Sin items</div>');
-            $('#a-subtotal').text(formatMoney(sub));
-            $('#a-discount').text(formatMoney(dscto));
-            $('#a-igv').text(formatMoney(igv));
-            $('#a-total').text(formatMoney(tot));
-
-            // Badge del FAB
-            $('#fab-count').text(ORDER.items.reduce((s,it)=>s+it.qty,0));
-        }
-
-        // Enviar a cocina (ambos botones apuntan a lo mismo)
-        $(document).on('click', '#btn-send-kitchen, #a-send-kitchen', function(){
-            if (ORDER.items.length === 0) {
-                return toastr.warning('No hay productos en el pedido.');
-            }
-            // TODO: AJAX para enviar comanda
-            toastr.success('Comanda enviada a cocina.');
-        });
-
-        // Render inicial vacío
-        renderOrder();
-    </script>--}}
 @endsection

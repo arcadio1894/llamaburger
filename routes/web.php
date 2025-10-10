@@ -33,6 +33,7 @@ use \App\Http\Controllers\RoleController;
 use \App\Http\Controllers\UserController;
 use \App\Http\Controllers\ComandaController;
 use \App\Http\Controllers\ComandaItemController;
+use \App\Http\Controllers\ProductOptionsController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -596,9 +597,14 @@ Route::middleware('auth')->group(function (){
             ->name('comanda_items.increment');             // +1/-1
         Route::post('/comanda-items/{item}/destroy', [ComandaItemController::class, 'destroy'])
             ->name('comanda_items.destroy');               // quitar
+        Route::post('/comanda-items/{item}/update', [ComandaItemController::class, 'update'])
+            ->name('comanda_items.update');
 
         Route::get('/mesa/productos', [AtencionController::class, 'productos'])
             ->name('atenciones.productos');
+
+        Route::get('/products/{product}/options', [ProductOptionsController::class, 'show'])
+            ->name('products.options');
 
         Route::post('/atenciones/{atencion}/cerrar', [AtencionController::class, 'cerrar'])
             ->name('atenciones.cerrar')
