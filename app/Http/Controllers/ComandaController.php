@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ComandaCreated;
 use App\Models\Atencion;
 use App\Models\Comanda;
 use Illuminate\Http\Request;
@@ -51,5 +52,65 @@ class ComandaController extends Controller
 
         return redirect()->route('atenciones.comanda.show', [$atencion->id, $comanda->numero])
             ->with('success', "Comanda #{$comanda->numero} creada.");
+    }
+
+    public function send(Request $request, Comanda $comanda)
+    {
+        // No reenviar si ya fue enviada
+        if (in_array($comanda->estado, ['enviada','cocinando','servida'])) {
+            return response()->json([
+                'ok' => false,
+                'msg' => 'Esta comanda ya fue enviada a cocina.'
+            ]);
+        }
+
+        // marca interna opcional
+        $comanda->update([
+            'estado' => 'enviada',            // si usas un campo; si no, omite
+            'sent_to_kitchen_at' => now(),    // si lo tienes; si no, omite
+        ]);
+
+        broadcast(new ComandaCreated($comanda));
+
+        return response()->json(['ok' => true, 'msg' => 'Comanda enviada a cocina.']);
+    }
+
+    public function openTickets()
+    {
+        // Ajusta si tus nombres de estado exactos difieren
+        // Estados de comanda: 'borrador' (no va a kanban), 'enviada', 'cocinando', 'servida'
+        $comandas = Comanda::with(['atencion.mesa','atencion.mozo'])
+            ->whereIn('estado', ['enviada','cocinando','servida'])
+            ->orderBy('id','desc')
+            ->get();
+
+        $tickets = $comandas->map(function($c){
+            return [
+                'id'          => 'comanda_' . $c->id,     // ID único para el kanban
+                'comanda_id'  => (int)$c->id,
+                'numero'      => (int)$c->numero,
+                'mesa'        => optional($c->atencion->mesa)->nombre,
+                'mozo'        => optional($c->atencion->mozo)->nombre,
+                'total'       => (float)$c->total,
+                'items'       => (int)($c->items()->count()),
+                'status'      => $this->mapComandaToKanban($c->estado), // created/processing/shipped
+            ];
+        })->values();
+
+        return response()->json([
+            'ok'      => true,
+            'tickets' => $tickets,
+        ]);
+    }
+
+    private function mapComandaToKanban($status)
+    {
+        // Mapea tu estado → columna del kanban
+        switch (trim(strtolower($status))) {
+            case 'enviada':    return 'created';    // Recibido
+            case 'cocinando':  return 'processing'; // Cocinando
+            case 'servida':    return 'shipped';    // En Trayecto (listo para recoger)
+            default:           return 'created';
+        }
     }
 }

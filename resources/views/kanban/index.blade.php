@@ -118,4 +118,5 @@
 @section('scripts')
     <script src="{{ asset('js/kanban/index.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/orderCreated.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/comandaCreated.js') }}?v={{ time() }}"></script>
 @endsection

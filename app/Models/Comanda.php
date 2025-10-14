@@ -17,7 +17,8 @@ class Comanda extends Model
         'subtotal',
         'descuento',
         'igv',
-        'total'
+        'total',
+        'sent_to_kitchen_at'
     ];
 
     public function atencion()

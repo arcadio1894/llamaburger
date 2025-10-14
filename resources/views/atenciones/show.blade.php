@@ -297,7 +297,11 @@
                     <div class="d-flex justify-content-between font-weight-bold">
                         <span>Total:</span><span id="ord-total">S/ 0.00</span>
                     </div>
-                    <button id="btn-send-kitchen" class="btn btn-dark btn-block mt-2">ENVIAR A COCINA</button>
+                    @if(in_array($comanda->estado, ['enviada','cocinando','servida']))
+                        <button id="a-send-kitchen" class="btn btn-dark btn-block mt-2" disabled>ENVIAR A COCINA</button>
+                    @else
+                        <button id="a-send-kitchen" class="btn btn-dark btn-block mt-2">ENVIAR A COCINA</button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -328,7 +332,11 @@
                 <div class="small d-flex justify-content-between"><span>IGV:</span><span id="a-igv">S/ 0.00</span></div>
                 <hr class="my-2">
                 <div class="d-flex justify-content-between font-weight-bold"><span>Total:</span><span id="a-total">S/ 0.00</span></div>
-                <button id="a-send-kitchen" class="btn btn-dark btn-block mt-2">ENVIAR A COCINA</button>
+                @if(in_array($comanda->estado, ['enviada','cocinando','servida']))
+                    <button id="a-send-kitchen" class="btn btn-dark btn-block mt-2" disabled>ENVIAR A COCINA</button>
+                @else
+                    <button id="a-send-kitchen" class="btn btn-dark btn-block mt-2">ENVIAR A COCINA</button>
+                @endif
             </div>
 
             <!-- BODY: lista de ítems (SCROLL) -->

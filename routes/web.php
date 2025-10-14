@@ -613,6 +613,9 @@ Route::middleware('auth')->group(function (){
         Route::get('/mesas/{mesa}/acceso', [AtencionController::class, 'checkAcceso'])
             ->name('mesas.checkAcceso'); // vista de gestión
 
+        Route::post('/comandas/{comanda}/send-kitchen', [ComandaController::class, 'send'])
+            ->name('comandas.sendKitchen');
+
         Route::get('/permissions', [PermissionController::class, 'index'])
             ->name('permissions.index')
             ->middleware('permission:permisos.list');

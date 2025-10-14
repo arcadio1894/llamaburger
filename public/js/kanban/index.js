@@ -71,69 +71,85 @@ $(document).ready(function () {
             });
         }, 500);
     });*/
-    $.get('/api/orders', function (data) {
-        let localData = data.map(order => {
-            let orderStatus = order.status.trim().toLowerCase();
-            return {
-                id: String(order.id),
-                status: orderStatus,
-                text: getOrderCardByStatus(order),
-                content: `Pedido #${order.id}`,
-                [orderStatus]: orderStatus
-            };
-        });
+    Promise.all([
+        $.get('/api/orders'),            // ya lo tenías
+        $.get('/api/kitchen/comandas')   // NUEVO endpoint
+    ]).then(function([orders, comRes]){
 
-        // Si no hay órdenes, insertar ítems dummy para cada columna
+        let localData = [];
+
+        // 1) Orders → como ya lo hacías
+        if (Array.isArray(orders)) {
+            localData = localData.concat(
+                orders.map(order => {
+                    let orderStatus = String(order.status || '').trim().toLowerCase();
+                    return {
+                        id: String(order.id),
+                        status: orderStatus,                           // created/processing/shipped
+                        text: getOrderCardByStatus(order),             // HTML existente
+                        content: `Pedido #${order.id}`,
+                        [orderStatus]: orderStatus
+                    };
+                })
+            );
+        }
+
+        // 2) Comandas → nuevas tarjetas
+        if (comRes && comRes.ok && Array.isArray(comRes.tickets)) {
+            localData = localData.concat(
+                comRes.tickets.map(t => {
+                    const status = String(t.status || 'created');
+                    return {
+                        id: String(t.id),                              // "comanda_57"
+                        status: status,                                // created/processing/shipped
+                        text: getComandaCardByStatus(t),               // HTML para comanda
+                        content: `Comanda #${t.numero}`,               // texto
+                        [status]: status
+                    };
+                })
+            );
+        }
+
+        // Dummy items si no hay nada
         if (localData.length === 0) {
             localData = [
-                { id: "dummy_created", status: "created", text: "", content: "", created: "created", dummy: true },
+                { id: "dummy_created",    status: "created",    text: "", content: "", created: "created",    dummy: true },
                 { id: "dummy_processing", status: "processing", text: "", content: "", processing: "processing", dummy: true },
-                { id: "dummy_shipped", status: "shipped", text: "", content: "", shipped: "shipped", dummy: true }
+                { id: "dummy_shipped",    status: "shipped",    text: "", content: "", shipped: "shipped",    dummy: true }
             ];
         }
 
-        let fields = [
+        // Init DataAdapter + Kanban
+        const fields = [
             { name: "id", type: "string" },
             { name: "status", type: "string" },
             { name: "text", type: "string" },
             { name: "content", type: "string" }
         ];
 
-        let source = {
-            localData: localData,
-            dataType: "array",
-            dataFields: fields
-        };
-
-        let dataAdapter = new $.jqx.dataAdapter(source, { autoBind: true });
+        const source = { localData, dataType: "array", dataFields: fields };
+        const dataAdapter = new $.jqx.dataAdapter(source, { autoBind: true });
 
         $("#kanban").jqxKanban({
             width: '100%',
             height: 600,
             source: dataAdapter,
             columns: [
-                { text: "Recibido", dataField: "created", width: 300 },
-                { text: "Cocinando", dataField: "processing", width: 300 },
-                { text: "En Trayecto", dataField: "shipped", width: 300 }
+                { text: "Recibido",   dataField: "created",    width: 300 },
+                { text: "Cocinando",  dataField: "processing", width: 300 },
+                { text: "En Trayecto",dataField: "shipped",    width: 300 }
             ],
-            resources: [
-                { id: 1, name: "Default", image: "default.png" }
-            ],
+            resources: [{ id: 1, name: "Default", image: "default.png" }],
             columnRenderer: function (element, collapsedElement, column) {
-                element.css({
-                    "min-width": "320px",
-                    "max-width": "320px",
-                    "text-align": "center"
-                });
+                element.css({ "min-width":"320px", "max-width":"320px", "text-align":"center" });
             },
             ready: function () {
-                console.log("📌 Kanban inicializado correctamente.");
-                // Remover los ítems dummy una vez que se ha renderizado el Kanban
-                setTimeout(removeDummyItems, 1000);
+                console.log("📌 Kanban inicializado con orders + comandas.");
+                setTimeout(removeDummyItems, 800);
             }
         });
 
-        // Forzar el diseño con CSS
+        // Forzar layout como ya hacías
         setTimeout(() => {
             $(".jqx-kanban-column").css({
                 "display": "inline-block",
@@ -142,13 +158,16 @@ $(document).ready(function () {
                 "min-width": "350px",
                 "max-width": "350px"
             });
-
             $(".jqx-kanban").css({
                 "display": "flex",
                 "justify-content": "center"
             });
         }, 500);
+
+    }).catch(function(err){
+        console.error('❌ Error cargando datos iniciales del kanban', err);
     });
+
 
     $("#kanban").on("itemMoved", function (event) {
         let args = event.args;
@@ -824,4 +843,46 @@ function limpiarItemId(itemId) {
         }
     }
     return itemId; // Devolver el mismo ID si no tiene el formato esperado
+}
+
+function getComandaCardCreated(t) {
+    let headerClass = "bg-gradient-warning";
+    let url_imprimir = document.location.origin + '/imprimir/comanda-mesa/' + t.comanda_id; // ajusta ruta si difiere
+    return `
+    <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
+      <div class="widget-user-header ${headerClass}" style="padding:8px;">
+        <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+        <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+          Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+        </h5>
+      </div>
+      <div class="card-footer" style="padding:8px;">
+        <div class="row">
+          <div class="col-sm-4 border-right">
+            <div class="description-block">
+              <a href="${url_imprimir}" target="_blank">
+                <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">VER COMANDA</h6>
+              </a>
+            </div>
+          </div>
+          <div class="col-sm-4 border-right">
+            <div class="description-block">
+              <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">S/ ${Number(t.total||0).toFixed(2)}</h6>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="description-block">
+              <a href="#" data-anular data-id="${t.comanda_id}">
+                <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">CANCELAR</h6>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function getComandaCardByStatus(ticket){
+    // por ahora mismo template; luego personalizamos por columna
+    return getComandaCardCreated(ticket);
 }

@@ -645,6 +645,27 @@
 
         // Render inicial por si acaso
         renderOrder();
+
+        // Enviar a cocina (ambos botones)
+        $(document).on('click', '#btn-send-kitchen, #a-send-kitchen', function(){
+            const btn = $(this);
+
+            if (ORDER.items.length === 0) { toastr.warning('No hay productos en el pedido.'); return; }
+
+            // prevenir doble click inmediato
+            if (btn.prop('disabled')) return;
+
+            btn.prop('disabled', true).text('Enviando...');
+
+            $.post('/dashboard/comandas/' + window.COMANDA_ID + '/send-kitchen', {}, function(res){
+                if (res && res.ok) {
+                    toastr.success(res.msg || 'Comanda enviada a cocina.');
+                    btn.prop('disabled', true).text('Enviado');
+                } else {
+                    toastr.error(res && res.msg ? res.msg : 'No se pudo enviar a cocina');
+                }
+            }, 'json').fail(function(){ toastr.error('Error al enviar a cocina'); });
+        });
     });
 
     // Calcula altura del área scrolleable (header + top consumen alto)

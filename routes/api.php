@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\Order;
 use \App\Http\Controllers\OrderController;
 use \App\Http\Controllers\DistributorController;
+use \App\Http\Controllers\ComandaController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -47,3 +48,5 @@ Route::post('/orders/update-time', [OrderController::class, 'updateTime']); // A
 Route::get('/distributors', [DistributorController::class, 'index']);
 Route::post('/orders/update-distributor', [OrderController::class, 'updateDistributor']);
 Route::post('/orders/entregar', [OrderController::class, 'entregarOrder']);
+
+Route::get('/kitchen/comandas', [ComandaController::class, 'openTickets']);
