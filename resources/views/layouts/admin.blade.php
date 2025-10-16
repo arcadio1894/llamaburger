@@ -583,9 +583,43 @@
                                 </a>
                             </li>
                             @endcan
+                                {{--<li class="nav-item">
+                                    <a href="{{route('pedido.externo.index')}}" class="nav-link @yield('activeListPedidoExterno')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Pedido Externo</p>
+                                    </a>
+                                </li>--}}
                         </ul>
                     </li>
                     @endcan
+
+
+                    <li class="nav-item has-treeview @yield('openSalas')">
+                        <a href="#" class="nav-link @yield('activeSalas')">
+                            <i class="nav-icon fas fa-utensils"></i>
+                            <p>
+                                Pedido Externo
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            {{--@can('espacios.enable_salas')--}}
+                                <li class="nav-item">
+                                    <a href="{{route('pedido.externo.index')}}" class="nav-link @yield('activeListPedidoExterno')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Listar</p>
+                                    </a>
+                                </li>
+                            {{--@endcan--}}
+                            <li class="nav-item">
+                                <a href="{{route('pedido.externo.crear')}}" class="nav-link @yield('activeCreatePedidoExterno')">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Crear pedido</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
 
                     @can('mantenedores.enable')
                     <li class="nav-header">MANTENEDORES</li>

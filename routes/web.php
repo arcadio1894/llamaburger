@@ -34,6 +34,9 @@ use \App\Http\Controllers\UserController;
 use \App\Http\Controllers\ComandaController;
 use \App\Http\Controllers\ComandaItemController;
 use \App\Http\Controllers\ProductOptionsController;
+use \App\Http\Controllers\PedidoExternoController;
+use \App\Http\Controllers\PagoController;
+use \App\Http\Controllers\ClienteController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -615,6 +618,23 @@ Route::middleware('auth')->group(function (){
 
         Route::post('/comandas/{comanda}/send-kitchen', [ComandaController::class, 'send'])
             ->name('comandas.sendKitchen');
+
+        Route::prefix('pedido-externo')->name('pedido.externo.')->group(function(){
+            Route::get('/', [PedidoExternoController::class, 'index'])->name('index');
+            Route::get('/crear', [PedidoExternoController::class, 'crear'])->name('crear');
+            Route::post('/{atencion}/ir-a-pagar', [PedidoExternoController::class, 'irPagar'])->name('ir_pagar');
+            Route::get('/{atencion}/comanda/{id_comanda}', [PedidoExternoController::class, 'showComanda'])
+                ->name('comanda.show');
+        });
+
+        Route::get('/atenciones/{atencion}/pago', [PagoController::class, 'create'])
+            ->name('pagos.create');
+
+        Route::post('/pagos', [PagoController::class, 'store'])
+            ->name('pagos.store');
+
+        Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index');
+        Route::post('/clientes', [ClienteController::class, 'store'])->name('clientes.store');
 
         Route::get('/permissions', [PermissionController::class, 'index'])
             ->name('permissions.index')

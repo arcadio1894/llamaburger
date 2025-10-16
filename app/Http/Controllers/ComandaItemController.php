@@ -15,12 +15,15 @@ class ComandaItemController extends Controller
     // ===== Seguridad básica: el mozo asignado a la atención puede operar la comanda
     protected function authorizeComanda(Comanda $comanda)
     {
-        if (auth()->check()) {
-            $mozo = Mozo::where('user_id', auth()->id())->where('activo', 1)->first();
-            if ($mozo && $comanda->atencion->mozo_id !== $mozo->id) {
-                abort(403, 'Acceso restringido.');
+        if ( $comanda->tipo == "mesa" ) {
+            if (auth()->check()) {
+                $mozo = Mozo::where('user_id', auth()->id())->where('activo', 1)->first();
+                if ($mozo && $comanda->atencion->mozo_id !== $mozo->id) {
+                    abort(403, 'Acceso restringido.');
+                }
             }
         }
+
     }
 
     // ===== Recalcular totales de la comanda (precios incluyen IGV)

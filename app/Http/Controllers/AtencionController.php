@@ -23,7 +23,11 @@ class AtencionController extends Controller
         ]);
 
         // Evitar 2 atenciones abiertas sobre la misma mesa
-        $existsOpen = Atencion::where('mesa_id', $mesa->id)->where('estado','abierta')->exists();
+        $existsOpen = Atencion::whereNotNull('mesa_id')
+            ->where('mesa_id', $mesa->id)
+            ->where('estado','abierta')
+            ->exists();
+
         if ($existsOpen) {
             return response()->json([
                 'ok'=>false,

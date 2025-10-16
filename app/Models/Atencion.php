@@ -19,10 +19,19 @@ class Atencion extends Model
         'comentario',
         'estado',
         'opened_at',
-        'closed_at'
+        'closed_at',
+        'tipo',
     ];
 
     protected $table = "atenciones";
+
+    public function scopeMesas($q) {
+        return $q->where('tipo','mesa');
+    }
+
+    public function scopeExternos($q) {
+        return $q->where('tipo','externo');
+    }
 
     public function mesa() {
         return $this->belongsTo(Mesa::class);

@@ -20,6 +20,7 @@ class ComandaItem extends Model
     ];
 
     protected $casts = ['opciones' => 'array'];
+    protected $appends = ['total'];
 
     public function comanda()
     {
@@ -29,5 +30,11 @@ class ComandaItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function getTotalAttribute()
+    {
+        // Suma segura (float) con 2 decimales
+        return round(((float)$this->precio_unit) * ((int)$this->cantidad), 2);
     }
 }
