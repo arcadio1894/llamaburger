@@ -1006,23 +1006,13 @@ class CartController extends Controller
                 return response()->json(['success' => false, 'message' => 'El carrito enviado no es válido.']);
             }
 
-            $totalAmount = $this->getTotalCart($cart);
-
-            // Manejar el distrito y el costo de envío
-            $districtId = $request->input('district');
-            /*if (!$districtId) {
-                DB::rollBack();
-                return response()->json(['success' => false, 'message' => 'Debe seleccionar un distrito para el envío.']);
-            }*/
-
-            //$district = ShippingDistrict::findOrFail($districtId);
-            //$shippingCost = $district->shipping_cost;
+            //$totalAmount = $this->getTotalCart($cart);
 
             $tienda = $request->input('tienda');
             $shippingCost = isset($tienda['precioEnvio']) ? $tienda['precioEnvio'] : 0;
             $shopId = isset($tienda['precioEnvio']) ? $tienda['tiendaId'] : null;
             $total = $this->getTotalCart($cart);
-            $totalWithShipping = $total + $shippingCost;
+            //$totalWithShipping = $total + $shippingCost;
 
             // Verificar el cupón
             $code = $request->input('coupon_name');
@@ -1048,19 +1038,28 @@ class CartController extends Controller
                     ->first();
 
                 if ((!$coupon->special && $userCoupon)) {
+                    $dataTotals = $this->getDataTotals($cart, $shippingCost, $discountAmount, 18);
                     return response()->json([
                         'success' => false,
                         'message' => 'El cupón ya ha sido utilizado.',
-                        'new_total' => number_format($totalWithShipping, 2),
+
+                        'total_gravada' => number_format($dataTotals['total_gravada'], 2, '.', ''),
+                        'total_igv' => number_format($dataTotals['total_igv'], 2, '.', ''),
+                        'total_a_pagar' => number_format($dataTotals['total_a_pagar'], 2, '.', ''),
+
                         'coupon_name' => ''
                     ]);
                 }
 
                 if ((!$coupon->special && $phoneCoupon)) {
+                    $dataTotals = $this->getDataTotals($cart, $shippingCost, $discountAmount, 18);
                     return response()->json([
                         'success' => false,
                         'message' => 'Sus datos ya han sido beneficiados con el cupón.',
-                        'new_total' => number_format($totalWithShipping, 2),
+                        'total_gravada' => number_format($dataTotals['total_gravada'], 2, '.', ''),
+                        'total_igv' => number_format($dataTotals['total_igv'], 2, '.', ''),
+                        'total_a_pagar' => number_format($dataTotals['total_a_pagar'], 2, '.', ''),
+
                         'coupon_name' => ''
                     ]);
                 }
@@ -1068,7 +1067,7 @@ class CartController extends Controller
 
 
                 if ($coupon->type == 'by_pass') {
-                    $discountAmount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? $total * ($coupon->percentage / 100) : 0);
+                    $discountAmount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? ($total/1.18) * ($coupon->percentage / 100) : 0);
                 } else {
                     $cartCategories = array_unique(array_map(function ($item) {
                         $product = Product::find($item['product_id']);
@@ -1079,10 +1078,15 @@ class CartController extends Controller
                     $hasAllowedCategory = !empty(array_intersect($cartCategories, $allowedCategories));
 
                     if (!$hasAllowedCategory) {
+                        $dataTotals = $this->getDataTotals($cart, $shippingCost, $discountAmount, 18);
                         return response()->json([
                             'success' => false,
                             'message' => 'El cupón no se puede aplicar a estos productos.',
-                            'new_total' => number_format($totalWithShipping, 2),
+
+                            'total_gravada' => number_format($dataTotals['total_gravada'], 2, '.', ''),
+                            'total_igv' => number_format($dataTotals['total_igv'], 2, '.', ''),
+                            'total_a_pagar' => number_format($dataTotals['total_a_pagar'], 2, '.', ''),
+
                             'coupon_name' => ''
                         ]);
                     }
@@ -1093,27 +1097,30 @@ class CartController extends Controller
                     }, $cart));
 
                     if ($coupon->type == 'total') {
-                        $discountAmount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? $total * ($coupon->percentage / 100) : 0);
+                        $discountAmount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? ($total/1.18) * ($coupon->percentage / 100) : 0);
                     } elseif ($coupon->type == 'detail') {
                         $maxDetail = collect($cart)->filter(function ($item) use ($allowedCategories) {
                             $product = Product::find($item['product_id']);
                             return in_array($product ? $product->category_id : null, $allowedCategories);
                         })->sortByDesc('total')->first();
 
-                        $discountAmount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? ($maxDetail['total'] ?? 0) * ($coupon->percentage / 100) : 0);
+                        $discountAmount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? (($maxDetail['total']/1.18) ?? 0) * ($coupon->percentage / 100) : 0);
                     }
                 }
             }
+
+            // TODO: Obtenemos el total_a_pagar
+            $dataTotals = $this->getDataTotals($cart, $shippingCost, $discountAmount, 18);
+            $totalAmount = $dataTotals['total_a_pagar'];
+
             // Validacion del vuelto antes de crear la orden
             if ( $validatedData['paymentMethod'] == 2 )
             {
                 $cashAmount = round((float)$request->input('cashAmount'), 2);
                 $totalAmount = round((float)$totalAmount, 2);
-                $discountAmount = round((float)$discountAmount, 2);
-                $shippingCost = round((float)$shippingCost, 2);
 
                 // Realizamos la operación matemática y redondeamos a 2 decimales
-                $vuelto = round(($cashAmount) - ($totalAmount - $discountAmount + $shippingCost), 2);
+                $vuelto = round(($cashAmount - $totalAmount), 2);
 
                 /*dump("cashAmount");
                 dump($cashAmount);
@@ -1152,6 +1159,32 @@ class CartController extends Controller
                 }
             }
 
+            // TODO: VALIDACIONES DE INVOICE
+            // Determinar tipo de documento SUNAT
+            $type_document = null;
+            $numero_documento_cliente = null;
+            $nombre_cliente = null;
+            $direccion_cliente = null;
+            $tipo_documento_cliente = null;
+            $email_cliente = null;
+
+            // Asignar según el tipo de comprobante
+            if ($request->invoice_type === 'boleta') {
+                $type_document = '03'; // Boleta
+                $numero_documento_cliente = $request->dni;
+                $nombre_cliente = $request->first_name . ' ' . $request->last_name;
+                $direccion_cliente = $request->address;
+                $tipo_documento_cliente = '1'; // DNI
+                $email_cliente = $request->email_invoice_boleta;
+            } elseif ($request->invoice_type === 'factura') {
+                $type_document = '01'; // Factura
+                $numero_documento_cliente = $request->ruc;
+                $nombre_cliente = $request->razon_social;
+                $direccion_cliente = $request->direccion_fiscal;
+                $tipo_documento_cliente = '6'; // RUC
+                $email_cliente = $request->email_invoice_factura;
+            }
+
             // Crear la orden
             $order = Order::create([
                 'user_id' => $userId,
@@ -1165,7 +1198,25 @@ class CartController extends Controller
                 'shipping_district_id' => null,
                 'shop_id' => $shopId,
                 'observations' => $request->input('observations', ''),
-                'flames' => $flames
+                'flames' => $flames,
+
+                // Facturación
+                'type_document' => $type_document,
+                'numero_documento_cliente' => $numero_documento_cliente,
+                'tipo_documento_cliente' => $tipo_documento_cliente,
+                'nombre_cliente' => $nombre_cliente,
+                'direccion_cliente' => $direccion_cliente,
+                'email_cliente' => $email_cliente,
+
+                // Los siguientes campos se llenarán más adelante cuando se genere el comprobante con Greenter
+                'serie' => null,
+                'numero' => null,
+                'sunat_ticket' => null,
+                'sunat_status' => null,
+                'sunat_message' => null,
+                'xml_path' => null,
+                'cdr_path' => null,
+                'fecha_emision' => null,
             ]);
 
             // Guardar los detalles de la orden
@@ -1212,7 +1263,7 @@ class CartController extends Controller
                     'product_type_id' => ($cartItem['product_type_id'] == null) ? null: $cartItem['product_type_id'],
                     'quantity' => $cartItem['quantity'],
                     'price' => $totalPrice,
-                    'subtotal' => $cartItem['quantity'] * $price,
+                    'subtotal' => $cartItem['quantity'] * $totalPrice,
                 ]);
 
                 // Guardar las opciones del detalle si existen
@@ -1317,7 +1368,7 @@ class CartController extends Controller
                         'cash_register_id' => $cashRegister->id,
                         'order_id' => $order->id,
                         'type' => 'sale', // Tipo de movimiento: venta
-                        'amount' => (float)$order->amount_pay,
+                        'amount' => $totalAmount,
                         'subtype' => 'pos',
                         'description' => 'Venta registrada con tipo de pago: pos',
                         'regularize' => 0
@@ -1363,7 +1414,7 @@ class CartController extends Controller
                     $telegramController->sendNotification('process', $data);
 
                     // Agregar movimientos a la caja
-                    $vuelto = (float)$request->input('cashAmount') - (float)$order->amount_pay;
+                    $vuelto = (float)$request->input('cashAmount') - (float)$totalAmount;
 
                     // Obtener la caja del tipo de pago
                     $cashRegister = CashRegister::where('type', $paymentTypeMap[1])
@@ -1474,7 +1525,7 @@ class CartController extends Controller
                             'cash_register_id' => $cashRegister->id,
                             'order_id' => $order->id,
                             'type' => 'sale', // Tipo de movimiento: venta
-                            'amount' => (float)$order->amount_pay,
+                            'amount' => (float)$totalAmount,
                             'subtype' => 'yape',
                             'description' => 'Venta registrada con tipo de pago: yape/plin'
                         ]);
@@ -2335,10 +2386,14 @@ class CartController extends Controller
 
         $coupon = Coupon::where('name', $code)->where('status', 'active')->first();
         if (!$coupon || $code == "") {
+
+            $totals = $this->getDataTotals($cart, $shippingCost, 0, 18);
             return response()->json([
                 'success' => false,
                 'message' => 'El código de promoción no es válido o está inactivo.',
-                'new_total' => number_format($totalWithShipping, 2),
+                'total_gravada' => number_format($totals['total_gravada'], 2, '.', ''),
+                'total_igv' => number_format($totals['total_igv'], 2, '.', ''),
+                'total_a_pagar' => number_format($totals['total_a_pagar'], 2, '.', ''),
                 'coupon_name' => ''
             ]);
         }
@@ -2352,19 +2407,25 @@ class CartController extends Controller
             ->first();
 
         if ((!$coupon->special && $userCoupon)) {
+            $totals = $this->getDataTotals($cart, $shippingCost, 0, 18);
             return response()->json([
                 'success' => false,
                 'message' => 'El cupón ya ha sido utilizado.',
-                'new_total' => number_format($totalWithShipping, 2),
+                'total_gravada' => number_format($totals['total_gravada'], 2, '.', ''),
+                'total_igv' => number_format($totals['total_igv'], 2, '.', ''),
+                'total_a_pagar' => number_format($totals['total_a_pagar'], 2, '.', ''),
                 'coupon_name' => ''
             ]);
         }
 
         if ((!$coupon->special && $phoneCoupon)) {
+            $totals = $this->getDataTotals($cart, $shippingCost, 0, 18);
             return response()->json([
                 'success' => false,
                 'message' => 'Sus datos ya han sido beneficiados con el cupón.',
-                'new_total' => number_format($totalWithShipping, 2),
+                'total_gravada' => number_format($totals['total_gravada'], 2, '.', ''),
+                'total_igv' => number_format($totals['total_igv'], 2, '.', ''),
+                'total_a_pagar' => number_format($totals['total_a_pagar'], 2, '.', ''),
                 'coupon_name' => ''
             ]);
         }
@@ -2383,10 +2444,14 @@ class CartController extends Controller
             $hasAllowedCategory = !empty(array_intersect($cartCategories, $allowedCategories));
 
             if (!$hasAllowedCategory) {
+                $totals = $this->getDataTotals($cart, $shippingCost, 0, 18);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'El cupón no se puede aplicar a estos productos.',
-                    'new_total' => number_format($totalWithShipping, 2),
+                    'total_gravada' => number_format($totals['total_gravada'], 2, '.', ''),
+                    'total_igv' => number_format($totals['total_igv'], 2, '.', ''),
+                    'total_a_pagar' => number_format($totals['total_a_pagar'], 2, '.', ''),
                     'coupon_name' => ''
                 ]);
             }
@@ -2397,14 +2462,14 @@ class CartController extends Controller
             }, $cart));
 
             if ($coupon->type == 'total') {
-                $discount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? $total * ($coupon->percentage / 100) : 0);
+                $discount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? ($total/1.18) * ($coupon->percentage / 100) : 0);
             } elseif ($coupon->type == 'detail') {
                 $maxDetail = collect($cart)->filter(function ($item) use ($allowedCategories) {
                     $product = Product::find($item['product_id']);
                     return in_array($product ? $product->category_id : null, $allowedCategories);
                 })->sortByDesc('total')->first();
 
-                $discount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? ($maxDetail['total'] ?? 0) * ($coupon->percentage / 100) : 0);
+                $discount = ($coupon->amount != 0) ? $coupon->amount : (($coupon->percentage != 0) ? (($maxDetail['total']/1.18) ?? 0) * ($coupon->percentage / 100) : 0);
             }
         }
 
@@ -2412,7 +2477,11 @@ class CartController extends Controller
             $discount = $total;
         }
 
+        $tax = 18;
+        $totals = $this->getDataTotals($cart, $shippingCost, $discount, $tax);
+
         $newTotal = $totalWithShipping - $discount;
+
         return response()->json([
             'success' => true,
             'code_name' => $coupon->name,
@@ -2421,7 +2490,61 @@ class CartController extends Controller
             'message' => 'Código aplicado. No borre el código.',
             'coupon_id' => $coupon->id,
             'district' => $districtId,
+            'total_gravada' => number_format($totals['total_gravada'], 2, '.', ''),
+            'total_igv' => number_format($totals['total_igv'], 2, '.', ''),
+            'total_a_pagar' => number_format($totals['total_a_pagar'], 2, '.', ''),
         ]);
+    }
+
+    function getDataTotals ($cart, $shipping, $discount, $tax)
+    {
+        $items = [];
+        $total_gravada = 0;
+        $total_igv = 0;
+        $taxDecimal = $tax / 100; // 0.18
+
+        foreach ($cart as $item) {
+            $valor_unitario = round($item['total'] / (1 + $taxDecimal), 6);
+            $subtotal = round($valor_unitario * $item['quantity'], 6);
+            $igv = round(($item['total'] * $item['quantity']) - $subtotal, 2);
+            $total = round($item['total'] * $item['quantity'], 6);
+
+            $items[] = [
+                'subtotal' => $subtotal,
+                'igv' => $igv,
+                'total' => $total
+            ];
+
+            $total_gravada += $subtotal;
+            $total_igv += $igv;
+        }
+
+        // Agregar costo de envío si existe
+        if ($shipping > 0) {
+            $valor_unitario_envio = round($shipping / (1 + $taxDecimal), 6);
+            $igv_envio = round($shipping - $valor_unitario_envio, 6);
+
+            $items[] = [
+                'subtotal' => $valor_unitario_envio,
+                'igv' => $igv_envio,
+                'total' => $shipping
+            ];
+
+            $total_gravada += $valor_unitario_envio;
+            $total_igv += $igv_envio;
+        }
+
+        // Aplicar descuento sobre la base imponible
+        $total_gravada_final = round($total_gravada - $discount, 2);
+        $total_igv_final = round($total_gravada_final * $taxDecimal, 2);
+        $total_a_pagar_final = round($total_gravada_final * (1 + $taxDecimal), 2);
+
+        return [
+            'total_gravada' => $total_gravada_final,
+            'total_igv' => $total_igv_final,
+            'total_a_pagar' => $total_a_pagar_final,
+            // 'items' => $items // Puedes retornarlos si los necesitas también
+        ];
     }
 
     function getTotalCart($cart)

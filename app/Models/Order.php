@@ -43,7 +43,13 @@ class Order extends Model
         'sunat_message',      // Mensaje o error recibido de SUNAT
         'xml_path',           // Ruta del archivo XML generado
         'cdr_path',           // Ruta del archivo CDR generado
-        'fecha_emision'       // Fecha de emisión del documento
+        'fecha_emision',       // Fecha de emisión del documento
+
+        'nombre_cliente',
+        'tipo_documento_cliente', // '1' = DNI, '6' = RUC
+        'numero_documento_cliente',
+        'direccion_cliente',
+        'email_cliente'
     ];
 
     public function user()
@@ -174,6 +180,67 @@ class Order extends Model
         // Si no hay descuento, devolver el total sin cambios
         return number_format($this->total_amount + $this->amount_shipping, 2, '.', '');
 
+    }
+
+    public function getDataTotalsAttribute()
+    {
+        $order = Order::find($this->id);
+
+        $userCoupon = UserCoupon::where('order_id', $order->id)->first();
+        $discount = $userCoupon ? round($userCoupon->discount_amount, 2) : 0;
+
+        $amount_shipping = round($order->amount_shipping, 2);
+
+        $items = $order->details->map(function ($item) {
+            $valor_unitario = round($item->price / 1.18, 6);
+            $subtotal = $valor_unitario * $item->quantity; // 20.25
+            $igv = ($item->price * $item->quantity) - $subtotal; // 23.90 - 20.25 = 3.65
+
+            return [
+                "unidad_de_medida" => "NIU",
+                "codigo" => $item->product_id,
+                "descripcion" => $item->product->full_name,
+                "cantidad" => $item->quantity,
+                "valor_unitario" => round($valor_unitario, 6),
+                "precio_unitario" => round($item->price, 6),
+                "subtotal" => round($subtotal, 6), // 34.66
+                "tipo_de_igv" => "1", // gravado
+                "igv" => round($igv, 2), // 6.24
+                "total" => round($item->price*$item->quantity, 6) // 40.90
+            ];
+        })->toArray();
+
+        if ($amount_shipping > 0) {
+            $valor_unitario_envio = round($amount_shipping / 1.18, 6);
+            $igv_envio = round($amount_shipping - $valor_unitario_envio, 6);
+
+            $items[] = [
+                "unidad_de_medida" => "NIU",
+                "codigo" => "ENVIO",
+                "descripcion" => "Costo de envío",
+                "cantidad" => 1,
+                "valor_unitario" => $valor_unitario_envio,
+                "precio_unitario" => $amount_shipping,
+                "subtotal" => $valor_unitario_envio,
+                "tipo_de_igv" => "1",
+                "igv" => $igv_envio,
+                "total" => $amount_shipping
+            ];
+        }
+
+        $total_gravada = array_sum(array_column($items, 'subtotal'));
+
+        return [
+                "total_gravada" => number_format($total_gravada - $discount, 2, '.', ''),
+                "total_igv" => number_format(($total_gravada - $discount) * 0.18, 2, '.', ''),
+                "total" => number_format(($total_gravada - $discount) * 1.18, 2, '.', ''),
+                "total_a_pagar" => number_format(($total_gravada - $discount) * 1.18, 2, '.', ''),
+            ] + ($discount > 0 ? [
+                "descuento_global" => number_format($discount, 2, '.', ''),
+                "total_descuento" => number_format($discount, 2, '.', '')
+            ] : []) + [
+                "items" => $items,
+            ];
 
     }
 

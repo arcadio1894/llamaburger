@@ -231,10 +231,15 @@ $(document).ready(function() {
                 $('#info_code').removeClass('hidden'); // Mostrar
                 $('#name_code').text(response.code_name); // Nombre del código
                 $('#amount_code').text(response.discount_display); // Monto de descuento
-                $('#total_amount').text(`S/ ${response.new_total}`); // Nuevo total con envío y descuento
+
+                $('#gravada_amount').text(`S/ ${response.total_gravada}`); // Nuevo total con envío y descuento
+                $('#igv_amount').text(`S/ ${response.total_igv}`); // Nuevo total con envío y descuento
+                $('#total_amount').text(`S/ ${response.total_a_pagar}`); // Nuevo total con envío y descuento
+
+
                 $('#coupon_name').val(response.code_name); // Nombre del código
 
-                $('#total-price-mobile').text(`S/ ${response.new_total}`);
+                $('#total-price-mobile').text(`S/ ${response.total_a_pagar}`);
                 toastr.success(response.message, 'Éxito',
                     {
                         "closeButton": true,
@@ -256,10 +261,14 @@ $(document).ready(function() {
             } else {
                 // Si hay error, ocultamos el código y restauramos el total con envío
                 $('#info_code').addClass('hidden');
-                $('#total_amount').text(`S/ ${response.new_total}`); // Devolver el total con envío sin descuento
+
+                $('#gravada_amount').text(`S/ ${response.total_gravada}`); // Nuevo total con envío y descuento
+                $('#igv_amount').text(`S/ ${response.total_igv}`); // Nuevo total con envío y descuento
+                $('#total_amount').text(`S/ ${response.total_a_pagar}`); // Nuevo total con envío y descuento
+
                 $('#coupon_name').val(""); // Limpiar el nombre del cupón
 
-                $('#total-price-mobile').text(`S/ ${response.new_total}`);
+                $('#total-price-mobile').text(`S/ ${response.total_a_pagar}`);
 
                 toastr.error(response.message, 'Error',
                     {
@@ -496,9 +505,28 @@ $(document).ready(function() {
         $("#infoModal").modal("show");
     });
 
+    $('input[name="invoice_type"]').on('change', function() {
+        let tipo = $(this).val();
+
+        if (tipo === 'boleta') {
+            $('#datos_boleta').removeClass('d-none');
+            $('#datos_factura').addClass('d-none');
+        } else if (tipo === 'factura') {
+            $('#datos_factura').removeClass('d-none');
+            $('#datos_boleta').addClass('d-none');
+        } else {
+            // Ninguno seleccionado
+            $('#datos_boleta').addClass('d-none');
+            $('#datos_factura').addClass('d-none');
+
+            // Limpiar inputs
+            $('#datos_boleta input, #datos_factura input').val('');
+        }
+    });
 });
 
 const TAX_RATE = 0.18; // IGV (18%)
+const TAX_RATE_100 = 18;
 
 async function fetchProduct(productId, productTypeId) {
     try {
@@ -599,13 +627,76 @@ async function loadCheckout() {
     const taxesCart = total - (total / (1 + TAX_RATE));
     const subtotalCart = total - taxesCart;
 
-    $("#subtotal_amount").html(`S/. ${subtotalCart.toFixed(2)}`);
-    $("#taxes_amount").html(`S/. ${taxesCart.toFixed(2)}`);
-    $("#total_amount").html(`S/. ${total.toFixed(2)}`);
+    /*
+    * return {
+        total_gravada: total_gravada,
+        total_igv: total_igv,
+        total_a_pagar: total_a_pagar
+    };
+    * */
+    let totals =getDataTotals(cart, shippingCost, TAX_RATE_100);
+    console.log(totals);
 
-    $("#total-price-mobile").html(`S/. ${total.toFixed(2)}`);
+    $("#gravada_amount").html(`S/. ${totals.total_gravada.toFixed(2)}`);
+    $("#igv_amount").html(`S/. ${totals.total_igv.toFixed(2)}`);
+    $("#total_amount").html(`S/. ${totals.total_a_pagar.toFixed(2)}`);
+
+    $("#total-price-mobile").html(`S/. ${totals.total_a_pagar.toFixed(2)}`);
 
     hideLoading(); // Ocultar indicador de carga
+}
+
+function getDataTotals(cart, shipping, tax) {
+    let items = [];
+    let total_gravada = 0;
+    let total_igv = 0;
+
+    const taxDecimal = tax / 100; // 0.18
+
+    cart.forEach(item => {
+        let valor_unitario = +(item.total / (1 + taxDecimal)).toFixed(6);
+        let subtotal = +(valor_unitario * item.quantity).toFixed(6);
+        let igv = +((item.total * item.quantity) - subtotal).toFixed(2);
+        let total = +(item.total * item.quantity).toFixed(6);
+
+        items.push({
+            subtotal: subtotal,
+            igv: igv,
+            total: total
+        });
+
+        total_gravada += subtotal;
+        total_igv += igv;
+    });
+
+    // Agregar envío si existe
+    if (shipping > 0) {
+        let valor_unitario_envio = +(shipping / (1 + taxDecimal)).toFixed(6);
+        let igv_envio = +(shipping - valor_unitario_envio).toFixed(6);
+
+        items.push({
+            subtotal: valor_unitario_envio,
+            igv: igv_envio,
+            total: shipping
+        });
+
+        total_gravada += valor_unitario_envio;
+        total_igv += igv_envio;
+    }
+
+    // Redondear totales finales
+    let discount = 0;
+    let total_gravada_final = +(total_gravada - discount).toFixed(2);
+    let total_igv_final = +(total_gravada_final * taxDecimal).toFixed(2);
+    let total_a_pagar_final = +(total_gravada_final * (1 + taxDecimal)).toFixed(2);
+
+    console.log(items);
+
+    return {
+        total_gravada: total_gravada_final,
+        total_igv: total_igv_final,
+        total_a_pagar: total_a_pagar_final
+    };
 }
 
 /*async function loadCheckout() {
@@ -882,6 +973,33 @@ function procesarFormulario() {
 }
 
 function submitFormAjax(extraData = {}) {
+    let tipo = $('input[name="invoice_type"]:checked').val();
+
+    if (tipo === 'boleta') {
+        let dni = $('input[name="dni"]').val().trim();
+        if (dni === '' || dni.length !== 8 || isNaN(dni)) {
+            toastr.error('Debe ingresar un DNI válido de 8 dígitos');
+            return;
+        }
+    } else if (tipo === 'factura') {
+        let ruc = $('input[name="ruc"]').val().trim();
+        let razon = $('input[name="razon_social"]').val().trim();
+        let direccion = $('input[name="direccion_fiscal"]').val().trim();
+
+        if (ruc === '' || ruc.length !== 11 || isNaN(ruc)) {
+            toastr.error('Debe ingresar un RUC válido de 11 dígitos');
+            return;
+        }
+        if (razon === '') {
+            toastr.error('Debe ingresar la Razón Social');
+            return;
+        }
+        if (direccion === '') {
+            toastr.error('Debe ingresar la Dirección Fiscal');
+            return;
+        }
+    }
+
     let formData = $('#checkoutForm').serializeArray(); // Serializa los datos del formulario
     // Convertimos el formData a un objeto para poder agregar extraData
     let dataObj = {};

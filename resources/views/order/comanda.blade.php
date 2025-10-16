@@ -115,7 +115,7 @@
 
 
     <div class="line"></div>
-    <p class="text-center" style="font-size: 18px"><b>TOTAL: S/. {{ $order->amount_pay }}</b></p>
+    <p class="text-center" style="font-size: 18px"><b>TOTAL: S/. {{ number_format($totals['total_a_pagar'], 2, '.', '') }}</b></p>
     <div class="line"></div>
     <p class="text-center" style="font-size: 18px"><b>{{($order->payment_method_id == null) ? 'Sin método de pago':$order->payment_method->name }} </b></p>
     <div class="line"></div>

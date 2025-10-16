@@ -228,7 +228,9 @@ class PrintController extends Controller
         $amount_subtotal = number_format(round($amount_only_total/1.18, 2), 2, '.', '');
         $amount_igv = round($amount_only_total - $amount_subtotal, 2);
 
-        $pdf = Pdf::loadView('order.recibo', compact('order','amount_total', 'amount_subtotal', 'amount_igv', 'discount', 'amount_shipping', 'amount_only_total'))
+        $totals = $order->data_totals;
+
+        $pdf = Pdf::loadView('order.recibo', compact('order','amount_total', 'amount_subtotal', 'amount_igv', 'discount', 'amount_shipping', 'amount_only_total', 'totals'))
             ->setPaper([0, 0, 226.8, 900], 'portrait'); // 80mm de ancho, altura dinámica
 
         return $pdf->stream("recibo_{$order->id}.pdf");
@@ -260,7 +262,9 @@ class PrintController extends Controller
         $amount_subtotal = number_format(round($amount_total/1.18, 2), 2, '.', '');
         $amount_igv = round($amount_total - $amount_subtotal, 2);
 
-        $pdf = Pdf::loadView('order.comanda', compact('order','amount_total', 'amount_subtotal', 'amount_igv', 'discount'))
+        $totals = $order->data_totals;
+
+        $pdf = Pdf::loadView('order.comanda', compact('order','amount_total', 'amount_subtotal', 'amount_igv', 'discount', 'totals'))
             ->setPaper([0, 0, 226.8, 900], 'portrait'); // 80mm de ancho, altura dinámica
 
         return $pdf->stream("recibo_{$order->id}.pdf");

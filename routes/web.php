@@ -38,6 +38,8 @@ use \App\Http\Controllers\PedidoExternoController;
 use \App\Http\Controllers\PagoController;
 use \App\Http\Controllers\ClienteController;
 use \App\Http\Controllers\BillingController;
+use \App\Http\Controllers\NubeFactController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -171,6 +173,10 @@ Route::middleware('auth')->group(function (){
 
         Route::get('/orders/{orderId}/details', [OrderController::class, 'getOrderDetails'])
             ->middleware('permission:pedidos.listar');
+
+        Route::post('/orders/update-invoice-data', [OrderController::class, 'updateInvoiceData']);
+        Route::post('/facturador/generar', [NubeFactController::class, 'generarComprobante'])->name('facturador.generar');
+
 
         // TODO: Rutas de Mantenedor de Productos (Productos Admin)
         Route::get('/listado/productos/', [ProductController::class, 'indexAdmin'])
@@ -760,4 +766,8 @@ Route::get('/products/initialize-days', [ProductController::class, 'initializePr
 Route::get('/reporte/cantidad-pizzas', [OrderController::class, 'reportePizzasFinde']);
 
 
+
 Route::get('/check/sales/vs/movements', [OrdersChartController::class, 'getRegularizedSalesWithOrderAmounts']);
+
+Route::get('/generate/recibo/prueba', [NubeFactController::class, 'generarRecibo']);
+
