@@ -236,7 +236,12 @@
 @endsection
 
 @section('content')
-    <div class="card">
+   {{-- <div class="card">--}}
+   @php
+       $pendientes = $atencion->comandas->whereIn('estado', ['borrador','enviada']);
+       $pendientesCount = $pendientes->count();
+       $firstPendiente = $pendientes->first();
+   @endphp
 
         <h4>Mesa {{ $atencion->mesa->nombre }} — Mozo: {{ $atencion->mozo->nombre }}</h4>
 
@@ -249,14 +254,38 @@
                     </a>
                 </li>
             @endforeach
-            <li class="nav-item ml-auto">
-                <form method="POST" action="{{ route('comandas.createNext', $atencion->id) }}">
-                    @csrf
-                    <button class="btn btn-sm btn-outline-primary">+ Nueva comanda</button>
-                </form>
-            </li>
+                <li class="nav-item ml-auto d-flex gap-1">
+                    {{-- Botón: Nueva Comanda --}}
+                    <form method="POST" action="{{ route('comandas.createNext', $atencion->id) }}" class="mr-1">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            + Nueva comanda
+                        </button>
+                    </form>
+
+                    {{-- Botón: Cancelar Mesa --}}
+                    <form class="mr-1">
+
+                        <button
+                                id="btn-cerrar-mesa"
+                                class="btn btn-sm btn-outline-danger"
+                                data-url="{{ route('atenciones.cerrar', $atencion) }}"
+                                data-pendientes="{{ $pendientesCount }}"
+                                data-first-url="{{ $firstPendiente ? route('atenciones.comanda.show', [$atencion->id, $firstPendiente->numero]) : '' }}"
+                        >
+                            Cancelar
+                        </button>
+                    </form>
+                    {{-- Botón: Ir a Pagar --}}
+                    <form method="POST" action="{{ route('atenciones.irPagar', $atencion) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-success">
+                            Ir a Pagar 💰
+                        </button>
+                    </form>
+                </li>
         </ul>
-    </div>
+    {{--</div>--}}
 
     <!-- TOPBAR: categorías + buscador -->
     <div class="products-topbar mb-2">

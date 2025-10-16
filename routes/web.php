@@ -37,6 +37,7 @@ use \App\Http\Controllers\ProductOptionsController;
 use \App\Http\Controllers\PedidoExternoController;
 use \App\Http\Controllers\PagoController;
 use \App\Http\Controllers\ClienteController;
+use \App\Http\Controllers\BillingController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -613,6 +614,12 @@ Route::middleware('auth')->group(function (){
             ->name('atenciones.cerrar')
             ->middleware('permission:mesas.cerrar');
 
+        Route::post('/atenciones/{atencion}/facturar', [BillingController::class, 'facturar'])
+            ->name('atenciones.facturar')
+            ->middleware('permission:pagos.generar');
+
+        Route::get('/invoices/{invoice}', [BillingController::class, 'show'])->name('invoices.show');
+
         Route::get('/mesas/{mesa}/acceso', [AtencionController::class, 'checkAcceso'])
             ->name('mesas.checkAcceso'); // vista de gestión
 
@@ -626,6 +633,9 @@ Route::middleware('auth')->group(function (){
             Route::get('/{atencion}/comanda/{id_comanda}', [PedidoExternoController::class, 'showComanda'])
                 ->name('comanda.show');
         });
+
+        Route::post('/atenciones/{atencion}/ir-a-pagar', [AtencionController::class, 'irPagar'])
+            ->name('atenciones.irPagar');
 
         Route::get('/atenciones/{atencion}/pago', [PagoController::class, 'create'])
             ->name('pagos.create');

@@ -666,6 +666,103 @@
                 }
             }, 'json').fail(function(){ toastr.error('Error al enviar a cocina'); });
         });
+
+        $(document).on('click', '#btn-cerrar-mesa', function (e) {
+            e.preventDefault();
+
+            const btn = $(this);
+            const pendientes = parseInt(btn.data('pendientes'), 10) || 0;
+            const firstUrl = btn.data('first-url');
+            const postUrl = btn.data('url');
+            const csrf = $('meta[name="csrf-token"]').attr('content');
+
+            // Si hay comandas pendientes, impedir cancelación
+            if (pendientes > 0) {
+                $.alert({
+                    title: 'No se puede cancelar',
+                    content: `Hay ${pendientes} comanda(s) en estado <b>Borrador</b> o <b>Enviada</b>. 
+                      Debes enviarlas a pagar o anularlas primero.`,
+                    buttons: {
+                        ver: {
+                            text: 'Ver pendiente',
+                            btnClass: 'btn-blue',
+                            action: function () {
+                                if (firstUrl) window.location.href = firstUrl;
+                            }
+                        },
+                        ok: {
+                            text: 'Entendido'
+                        }
+                    }
+                });
+                return;
+            }
+
+            // Confirmación para cerrar
+            $.confirm({
+                title: 'Confirmar cancelación',
+                content: '¿Deseas cancelar y liberar la mesa?',
+                buttons: {
+                    cancelar: {
+                        text: 'No'
+                    },
+                    aceptar: {
+                        text: 'Sí, cancelar',
+                        btnClass: 'btn-red',
+                        action: function () {
+                            btn.prop('disabled', true);
+
+                            $.ajax({
+                                url: postUrl,
+                                method: 'POST',
+                                data: {_token: csrf},
+                            })
+                                .done(function (res) {
+                                    if (res.ok) {
+                                        $.alert({
+                                            title: 'Listo',
+                                            content: res.msg || 'Mesa desocupada.',
+                                            buttons: {
+                                                ir: {
+                                                    text: 'Ir a salas',
+                                                    action: function () {
+                                                        if (res.redirect_url) window.location.href = res.redirect_url;
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        $.alert(res.msg || 'Ocurrió un problema.');
+                                    }
+                                })
+                                .fail(function (xhr) {
+                                    let msg = 'Error al cerrar la mesa.';
+                                    if (xhr.responseJSON && xhr.responseJSON.msg) {
+                                        msg = xhr.responseJSON.msg;
+                                    }
+                                    $.alert({
+                                        title: 'Ups…',
+                                        content: msg,
+                                        buttons: {
+                                            ver: xhr.responseJSON && xhr.responseJSON.redirect_url ? {
+                                                text: 'Ver pendiente',
+                                                action: function () {
+                                                    window.location.href = xhr.responseJSON.redirect_url;
+                                                }
+                                            } : undefined,
+                                            ok: { text: 'Aceptar' }
+                                        }
+                                    });
+                                })
+                                .always(function () {
+                                    btn.prop('disabled', false);
+                                });
+                        }
+                    }
+                }
+            });
+        });
+
     });
 
     // Calcula altura del área scrolleable (header + top consumen alto)

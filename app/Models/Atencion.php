@@ -42,4 +42,10 @@ class Atencion extends Model
     public function comandas() {
         return $this->hasMany(Comanda::class);
     }
+    public function invoices(){
+        return $this->hasMany(Invoice::class);
+    }
+    public function payments(){
+        return $this->hasMany(Payment::class);
+    }
 }

@@ -149,6 +149,23 @@ class AtencionController extends Controller
     // POST /atenciones/{atencion}/cerrar
     public function cerrar(Request $request, Atencion $atencion)
     {
+        abort_unless($atencion->tipo === 'mesa', 404);
+
+        // Si existe alguna comanda pendiente (borrador o enviada), no permitir
+        $pendiente = $atencion->comandas()
+            ->whereIn('estado', ['borrador', 'enviada'])
+            ->orderBy('numero')
+            ->first();
+
+        if ($pendiente) {
+            return response()->json([
+                'ok' => false,
+                'msg' => 'No se puede cancelar la mesa: hay comandas en estado "borrador" o "enviada". ' .
+                    'Debes enviarlas a pagar o anularlas primero.',
+                'redirect_url' => route('atenciones.comanda.show', [$atencion->id, $pendiente->numero]),
+            ], 422);
+        }
+
         try {
             DB::transaction(function () use ($atencion) {
                 $atencion->update([
@@ -159,11 +176,14 @@ class AtencionController extends Controller
                 $atencion->mesa()->update(['estado' => 'libre']);
             });
 
-            return response()->json(['ok'=>true,'msg'=>'Mesa desocupada.','redirect_url'=>route('salas.index')]);
-
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Mesa desocupada.',
+                'redirect_url' => route('salas.index')
+            ]);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['ok'=>false,'msg'=>'No se pudo cerrar la atención.'], 500);
+            return response()->json(['ok' => false, 'msg' => 'No se pudo cerrar la atención.'], 500);
         }
     }
 
@@ -272,5 +292,24 @@ class AtencionController extends Controller
                 ];
             })->values(),
         ]);
+    }
+
+    public function irPagar(Request $request, Atencion $atencion)
+    {
+        abort_unless($atencion->tipo === 'mesa', 404);
+
+        $comanda = $atencion->comandas()->where('numero', 1)->first();
+        if (!$comanda) {
+            return back()->withErrors('La comanda no existe.');
+        }
+        if ($comanda->items()->count() === 0) {
+            return back()->withErrors('Agrega al menos un producto.');
+        }
+
+        // Estado intermedio
+        $atencion->update(['estado' => 'por_pagar']);
+
+        // Redirige a la vista de pagos (la misma que usas con los externos)
+        return redirect()->route('pagos.create', $atencion);
     }
 }
