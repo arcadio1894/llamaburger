@@ -3,42 +3,56 @@
 namespace App\Http\Controllers;
 
 use App\Models\Atencion;
+use App\Models\Comanda;
 use App\Models\ComandaItem;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PagoController extends Controller
 {
     public function create(Atencion $atencion)
     {
-        $comandaIds = $atencion->comandas()->pluck('id');
+        // 1) Todas las comandas de la atención (sin forzar sin-scopes)
+        $comandaIds = Comanda::where('atencion_id', $atencion->id)->pluck('id');
 
-        $items = ComandaItem::with('product')
-            ->whereIn('comanda_id', $comandaIds)
-            ->orderBy('id','asc')
-            ->get()
-            ->map(function ($it) {
-                $pagado = (int) ($it->pagado_cant ?? 0); // si no existe, será 0
-                $it->restante = max(0, (int)$it->cantidad - $pagado);
-                return $it;
-            })
-            ->filter(function ($it) {
-                return $it->restante > 0;
-            })
-            ->values();
+        // Si no hay comandas, devolvemos colección vacía
+        if ($comandaIds->isEmpty()) {
+            $items = collect();
+        } else {
+            // 2) Ítems + suma de liquidaciones (qty) -> pagado_qty
+            $items = ComandaItem::select('comanda_items.*')
+                ->with('product')
+                ->whereIn('comanda_id', $comandaIds)
+                ->withSum('liquidaciones as pagado_qty', 'qty')
+                ->orderBy('comanda_items.id', 'asc')
+                ->get()
+                ->map(function ($it) {
+                    $pagado = (int) ($it->pagado_qty ?? 0);
+                    $it->restante = max(0, (int) $it->cantidad - $pagado);
+                    return $it;
+                })
+                // Mostrar SOLO pendientes (si quieres ver todos, comenta este filtro)
+                ->filter(function ($it) {
+                    return $it->restante > 0;
+                })
+                ->values();
+        }
 
-        // ⚠️ No usar \App\Cliente (no existe aún)
-        $clientes = []; // más adelante lo llenaremos desde la tabla clientes
+        // Clientes (completa cuando integres la tabla clientes)
+        $clientes = [];
 
-        $payment_methods = PaymentMethod::active()->orderBy('id', 'desc')->get();
+        $payment_methods = PaymentMethod::active()
+            ->orderBy('id', 'desc')
+            ->get();
 
         return view('pago.create', [
-            'atencion'  => $atencion,
-            'items'     => $items,
-            'esExterno' => $atencion->tipo === 'externo',
-            'clientes'  => $clientes, // <- se envía vacío por ahora
-            'payment_methods' => $payment_methods
+            'atencion'        => $atencion,
+            'items'           => $items,
+            'esExterno'       => $atencion->tipo === 'externo',
+            'clientes'        => $clientes,
+            'payment_methods' => $payment_methods,
         ]);
     }
 

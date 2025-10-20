@@ -191,7 +191,7 @@ class AtencionController extends Controller
     {
         // Buscar atención abierta de esa mesa
         $atencion = Atencion::where('mesa_id', $mesa->id)
-            ->where('estado', 'abierta')
+            ->whereIn('estado',['abierta', 'por_pagar'])
             ->latest('id')
             ->first();
 

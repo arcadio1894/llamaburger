@@ -196,18 +196,87 @@ $(document).ready(function() {
     /** ----------------------------------------------------------
      *  CLIENTES (Select2 + Modal)
      *  ---------------------------------------------------------- */
+    // Helpers reutilizables
+    // Limpia inputs de facturación
+    function clearBillingFields() {
+        $('[name="dni"]').val('');
+        $('[name="ruc"]').val('');
+        $('[name="razon_social"]').val('');
+        $('[name="direccion_fiscal"]').val('');
+        $('[name="email_invoice_boleta"]').val('');
+        $('[name="email_invoice_factura"]').val('');
+    }
+
+    function currentInvoiceType() {
+        return $('input[name="invoice_type"]:checked').val() || 'ninguno';
+    }
+
+// Reemplaza tu fillBillingFromCustomer por este
+    function fillBillingFromCustomer(c) {
+        clearBillingFields();
+        const tipoComprobante = currentInvoiceType();
+        const docTipo = String(c.doc_tipo || '').toUpperCase();
+
+        if (tipoComprobante === 'boleta') {
+            // Solo rellenar si el cliente es de tipo DNI
+            if (docTipo === 'DNI' && c.dni) {
+                $('[name="dni"]').val(c.dni);
+                $('[name="email_invoice_boleta"]').val(c.email || '');
+            }
+            // Si no es DNI, NO rellenamos nada (queda vacío para que el cajero lo escriba si quiere boleta)
+        }
+
+        if (tipoComprobante === 'factura') {
+            // Solo rellenar si el cliente es de tipo RUC
+            if (docTipo === 'RUC' && c.ruc) {
+                $('[name="ruc"]').val(c.ruc);
+                $('[name="razon_social"]').val(c.razon_social || c.nombre || '');
+                $('[name="direccion_fiscal"]').val(c.direccion || '');
+                $('[name="email_invoice_factura"]').val(c.email || '');
+            }
+            // Si no es RUC, NO rellenamos nada
+        }
+    }
+
+    // Crea un objeto de datos uniforme para Select2 (desde API o desde fallback)
+    function mapClienteToSelect2Item(item) {
+        const num_doc  = item.num_doc || item.numero_documento || item.doc || '';
+        const rawTipo  = item.tipo_doc || item.doc_tipo || '';
+        const doc_tipo = String(rawTipo).trim().toUpperCase(); // 'DNI' | 'RUC' | ...
+
+        return {
+            id: item.id,
+            text: item.nombre
+                ? (item.nombre + (num_doc ? ' (' + num_doc + ')' : ''))
+                : (item.razon_social || ('Cliente #' + item.id)),
+
+            // Metadatos CONSISTENTES (sin inferencias)
+            doc_tipo: doc_tipo,      // usa exactamente lo que venga del backend
+            num_doc: num_doc,        // solo informativo
+            dni: (doc_tipo === 'DNI') ? (item.dni || num_doc) : '',    // solo si es DNI
+            ruc: (doc_tipo === 'RUC') ? (item.ruc || num_doc) : '',    // solo si es RUC
+
+            nombre: item.nombre || '',
+            razon_social: item.razon_social || item.nombre || '',
+            direccion: item.direccion || item.direccion_fiscal || '',
+            email: item.email || item.correo || ''
+        };
+    }
+
+    // INIT Select2 con metadata
     $('.select2-clientes').select2({
         ajax: {
             url: $('#cliente_id').data('url'),
             dataType: 'json',
             delay: 250,
+            data: function (params) {
+                return { q: params.term };
+            },
             processResults: function (data) {
+                // Esperamos un array, lo mapeamos a un formato uniforme
                 return {
                     results: $.map(data, function (item) {
-                        return {
-                            id: item.id,
-                            text: item.nombre + (item.num_doc ? ' (' + item.num_doc + ')' : '')
-                        };
+                        return mapClienteToSelect2Item(item);
                     })
                 };
             },
@@ -218,10 +287,37 @@ $(document).ready(function() {
         width: 'resolve'
     });
 
-    // Guardar cliente desde modal
-    $('#btnGuardarCliente').on('click', function() {
-        var $form = $('#frmCliente');
-        var url = $form.data('action');
+    // Al seleccionar cliente → autocompletar
+    $('#cliente_id').on('select2:select', function (e) {
+        const selected = e.params.data; // ya viene con la metadata de processResults
+        fillBillingFromCustomer(selected);
+    });
+
+    // Al limpiar cliente → limpiar campos factura/boleta
+    $('#cliente_id').on('select2:clear', function () {
+        clearBillingFields();
+    });
+
+    // Si cambias el tipo de comprobante con un cliente ya seleccionado, re-aplica
+    $('input[name="invoice_type"]').on('change', function () {
+        if (this.value === 'boleta') {
+            $('#datos_boleta').removeClass('d-none');
+            $('#datos_factura').addClass('d-none');
+        } else if (this.value === 'factura') {
+            $('#datos_factura').removeClass('d-none');
+            $('#datos_boleta').addClass('d-none');
+        } else {
+            $('#datos_boleta, #datos_factura').addClass('d-none');
+            clearBillingFields();
+        }
+        const data = $('#cliente_id').select2('data');
+        if (data && data.length) fillBillingFromCustomer(data[0]);
+    });
+
+    /** Guardar cliente desde modal → inyectar al Select2 con metadata */
+    $('#btnGuardarCliente').off('click').on('click', function() {
+        const $form = $('#frmCliente');
+        const url = $form.data('action');
 
         $.ajax({
             url: url,
@@ -229,9 +325,27 @@ $(document).ready(function() {
             data: $form.serialize(),
             success: function(r) {
                 if (r.ok && r.cliente) {
-                    // Crear opción y seleccionar
-                    var option = new Option(r.cliente.display, r.cliente.id, true, true);
+                    // Si el backend YA devuelve campos ricos:
+                    // r.cliente debería traer { id, nombre|razon_social, tipo_doc, num_doc, direccion, email, ... }
+                    // Si no, usamos los valores del modal como fallback:
+                    const fallback = {
+                        id: r.cliente.id,
+                        nombre: $form.find('[name="nombre"]').val() || '',
+                        tipo_doc: $form.find('[name="tipo_doc"]').val() || '',
+                        num_doc: $form.find('[name="num_doc"]').val() || '',
+                        direccion: '', email: ''
+                    };
+
+                    const enriched = mapClienteToSelect2Item($.extend({}, fallback, r.cliente));
+
+                    // Crear opción seleccionada con metadata
+                    const option = new Option(enriched.text, enriched.id, true, true);
+                    // Select2 toma el objeto “data” del option si lo adjuntamos así:
+                    $(option).data('data', enriched);
                     $('#cliente_id').append(option).trigger('change');
+
+                    // Autocompletar según tipo actual
+                    fillBillingFromCustomer(enriched);
 
                     // Cerrar modal y limpiar
                     $('#modalCliente').modal('hide');
@@ -248,4 +362,288 @@ $(document).ready(function() {
         });
     });
 
+    /** ----------------------------------------------------------
+     *  INVOICE
+     *  ---------------------------------------------------------- */
+    $('input[name="invoice_type"]').on('change', function() {
+        let tipo = $(this).val();
+
+        if (tipo === 'boleta') {
+            $('#datos_boleta').removeClass('d-none');
+            $('#datos_factura').addClass('d-none');
+        } else if (tipo === 'factura') {
+            $('#datos_factura').removeClass('d-none');
+            $('#datos_boleta').addClass('d-none');
+        } else {
+            // Ninguno seleccionado
+            $('#datos_boleta').addClass('d-none');
+            $('#datos_factura').addClass('d-none');
+
+            // Limpiar inputs
+            $('#datos_boleta input, #datos_factura input').val('');
+        }
+    });
+
+
+    /** ----------------------------------------------------------
+     *  VALIDACIÓN + CONFIRMACIÓN + SUBMIT CONTROLADO
+     *  ---------------------------------------------------------- */
+
+    function selectedPaymentMethodCode() {
+        const $checked = $('input[name="paymentMethod"]:checked');
+        return $checked.length ? $checked.data('code') : null;
+    }
+
+    // Reutiliza tu getItemById si lo necesitas; usamos pick ya armado
+    function buildItemsArrayFromPick() {
+        var arr = [];
+        for (var id in pick) {
+            if (!pick.hasOwnProperty(id)) continue;
+            arr.push({ id: parseInt(id, 10), qty: parseInt(pick[id], 10) });
+        }
+        return arr;
+    }
+
+    function validateBeforePay() {
+        // 1) Total > 0
+        var total = parseFloat($('#total').text() || '0');
+        if (isNaN(total) || total <= 0) {
+            return { ok:false, msg:'El total debe ser mayor a 0.' };
+        }
+
+        // 2) Debe haber ítems seleccionados
+        var itemsArr = buildItemsArrayFromPick();
+        if (itemsArr.length === 0) {
+            return { ok:false, msg:'Selecciona al menos un producto/cantidad a pagar.' };
+        }
+
+        // 3) Cliente SIEMPRE obligatorio (independiente del comprobante)
+        if (!$('#cliente_id').val()) {
+            return { ok:false, msg:'Selecciona un cliente antes de continuar.' };
+        }
+
+        // 4) Datos obligatorios según tipo de comprobante
+        var invType = currentInvoiceType(); // ninguno | boleta | factura
+        if (invType === 'boleta') {
+            var dni = ($('[name="dni"]').val() || '').trim();
+            if (!dni) return { ok:false, msg:'Para BOLETA, el DNI es obligatorio.' };
+        }
+        if (invType === 'factura') {
+            var ruc  = ($('[name="ruc"]').val() || '').trim();
+            var rs   = ($('[name="razon_social"]').val() || '').trim();
+            var dir  = ($('[name="direccion_fiscal"]').val() || '').trim();
+            if (!ruc) return { ok:false, msg:'Para FACTURA, el RUC es obligatorio.' };
+            if (!rs)  return { ok:false, msg:'Para FACTURA, la Razón Social es obligatoria.' };
+            if (!dir) return { ok:false, msg:'Para FACTURA, la Dirección Fiscal es obligatoria.' };
+        }
+
+        // 5) Método de pago
+        var method = selectedPaymentMethodCode(); // 'yape_plin' | 'efectivo' | 'pos' | ...
+        if (!method) return { ok:false, msg:'Selecciona un método de pago.' };
+
+        if (method === 'yape_plin') {
+            var op = ($('#operationCode').val() || '').trim();
+            if (!op) return { ok:false, msg:'Ingresa el código de operación de Yape/Plin.' };
+        }
+
+        if (method === 'efectivo') {
+            var cash = parseFloat($('#cashAmount').val() || '0');
+            if (isNaN(cash) || cash <= 0) {
+                return { ok:false, msg:'Ingresa el monto con el que paga en efectivo.' };
+            }
+        }
+
+        return { ok:true, msg:'' };
+    }
+
+    function prepareHiddenItemsInputs(itemsArr) {
+        // Limpia previos (por si reintenta)
+        $('#frmPago input[name^="items["]').remove();
+
+        // Guarda JSON visible
+        $('#items_payload').val(JSON.stringify(itemsArr));
+
+        // Agrega inputs ocultos para backend (como ya hacías en submit)
+        for (var i = 0; i < itemsArr.length; i++) {
+            $('#frmPago').append('<input type="hidden" name="items[' + i + '][id]" value="' + itemsArr[i].id + '">');
+            $('#frmPago').append('<input type="hidden" name="items[' + i + '][qty]" value="' + itemsArr[i].qty + '">');
+        }
+    }
+
+    function readTotalNumber() {
+        return parseFloat(($('#total').text() || '0').replace(',', '')) || 0;
+    }
+
+    function buildFacturarPayload() {
+        const invType = currentInvoiceType(); // ninguno | boleta | factura
+        const total = readTotalNumber();
+        const sel = $('#cliente_id').select2('data');
+        const s2  = (sel && sel.length) ? sel[0] : null;
+
+        const data = {
+            // backend: atenciones.facturar
+            tipo: invType === 'ninguno' ? 'ticket' : invType,  // ticket|boleta|factura
+            customer_id: $('#cliente_id').val() || null,
+
+            // Overrides "foto" del cliente (solo si aplica)
+            cliente_doc_tipo: null,
+            cliente_doc_num:  null,
+            cliente_nombre:   null,
+            cliente_direccion:null,
+
+            // Descuentos/propinas (si los vas a usar)
+            descuento: null,  // {tipo: 'porc'|'fijo', valor: number}
+            propina:   null,
+
+            // Ítems seleccionados
+            items: buildItemsArrayFromPick(), // [{id, qty}]
+
+            // Pagos
+            pagos: []
+        };
+
+        // Datos Boleta
+        if (invType === 'boleta') {
+            data.cliente_doc_tipo = 'DNI';
+            data.cliente_doc_num  = ($('[name="dni"]').val() || '').trim();
+            data.cliente_nombre   = s2 ? (s2.nombre || s2.razon_social || s2.text || '') : '';
+        }
+        // Datos Factura
+        if (invType === 'factura') {
+            data.cliente_doc_tipo  = 'RUC';
+            data.cliente_doc_num   = ($('[name="ruc"]').val() || '').trim();
+            data.cliente_nombre    = ($('[name="razon_social"]').val() || '').trim();
+            data.cliente_direccion = ($('[name="direccion_fiscal"]').val() || '').trim();
+        }
+
+        // Descuento
+        const dt = $('#descuento_tipo').val();
+        const dv = parseFloat($('#descuento_val').val() || '0');
+        if (dt === 'porc') data.descuento = {tipo:'porc', valor: dv};
+        if (dt === 'fijo') data.descuento = {tipo:'fijo', valor: dv};
+
+        // Propina
+        const pt = $('#propina_tipo').val();
+        const pv = parseFloat($('#propina_val').val() || '0');
+        if (pt === 'porc') data.propina = {tipo:'porc', valor: pv};
+        if (pt === 'fijo') data.propina = {tipo:'fijo', valor: pv};
+
+        // Pagos
+        const method = selectedPaymentMethodCode(); // 'yape_plin' | 'efectivo' | 'pos' | ...
+        if (method === 'yape_plin') {
+            data.pagos.push({
+                metodo: 'yape',
+                monto: total,
+                referencia: ($('#operationCode').val() || '').trim()
+            });
+        } else if (method === 'efectivo') {
+            const recibido = parseFloat($('#cashAmount').val() || '0');
+            const vuelto = Math.max(0, recibido - total);
+            data.pagos.push({
+                metodo: 'efectivo',
+                monto: total,
+                monto_recibido: recibido,
+                vuelto: vuelto
+            });
+        } else if (method === 'pos') {
+            data.pagos.push({
+                metodo: 'tarjeta',
+                monto: total,
+                referencia: null
+            });
+        }
+
+        return data;
+    }
+    // Handler del botón custom
+    $('#btnPagar').off('click').on('click', function(e) {
+        e.preventDefault();
+
+        var val = validateBeforePay();
+        if (!val.ok) {
+            $.alert({
+                title: 'Falta información',
+                content: val.msg
+            });
+            return;
+        }
+
+        // Confirmación final antes de enviar
+        var totalTxt = $('#btnTotal').text() || $('#total').text() || '0.00';
+        $.confirm({
+            title: 'Confirmar pago',
+            content: 'Se generará el comprobante por <b>S/ ' + totalTxt + '</b>.<br>¿Deseas continuar?',
+            buttons: {
+                cancelar: function(){},
+                confirmar: {
+                    text: 'Sí, continuar',
+                    btnClass: 'btn-green',
+                    action: function() {
+                        $('#btnPagar').prop('disabled', true);
+
+                        // Prepara ítems ocultos (si tu backend los usa en form-data)
+                        var arr = buildItemsArrayFromPick();
+                        prepareHiddenItemsInputs(arr);
+
+                        // Construye payload y dispara AJAX
+                        const payload = buildFacturarPayload();
+                        const csrf = $('meta[name="csrf-token"]').attr('content');
+                        const url  = $('#frmPago').data('action'); // <- ya lo tienes en el form
+
+                        $.ajax({
+                            url: url,
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': csrf },
+                            data: payload, // (Laravel friendly: form-encoded)
+                            // Si prefieres JSON:
+                            // contentType: 'application/json; charset=utf-8',
+                            // data: JSON.stringify(payload),
+                        })
+                            .done(function(res){
+                                if (res && res.ok) {
+                                    const pdf = res.pdf_url || (res.data && res.data.enlace_del_pdf) || null;
+                                    const ver = res.comprobante_url || null;
+
+                                    $.confirm({
+                                        title: 'Comprobante generado ✅',
+                                        content: 'Tu comprobante ha sido emitido correctamente.',
+                                        buttons: {
+                                            pdf: pdf ? {
+                                                text: 'Abrir PDF',
+                                                btnClass: 'btn-blue',
+                                                action: function(){ window.open(pdf, '_blank'); }
+                                            } : undefined,
+                                            ver: ver ? {
+                                                text: 'Ver detalle',
+                                                action: function(){ window.location.href = ver; }
+                                            } : undefined,
+                                            ok: {
+                                                text: 'Aceptar',
+                                                action: function(){
+                                                    if (res.redirect_url) window.location.href = res.redirect_url;
+                                                    else location.reload();
+                                                }
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    const msg = (res && (res.msg || res.message)) || 'No se pudo generar el comprobante.';
+                                    $.alert({ title:'Ups…', content: msg });
+                                }
+                            })
+                            .fail(function(xhr){
+                                let msg = 'Error al generar el comprobante.';
+                                if (xhr.responseJSON && (xhr.responseJSON.msg || xhr.responseJSON.message)) {
+                                    msg = xhr.responseJSON.msg || xhr.responseJSON.message;
+                                }
+                                $.alert({ title:'Error', content: msg });
+                            })
+                            .always(function(){
+                                $('#btnPagar').prop('disabled', false);
+                            });
+                    }
+                }
+            }
+        });
+    });
 });

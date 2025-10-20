@@ -37,4 +37,21 @@ class ComandaItem extends Model
         // Suma segura (float) con 2 decimales
         return round(((float)$this->precio_unit) * ((int)$this->cantidad), 2);
     }
+
+    public function liquidaciones()
+    {
+        return $this->hasMany(ComandaItemLiquidacion::class);
+    }
+
+    // Cantidad pagada acumulada
+    public function getPagadoQtyAttribute()
+    {
+        return (int) $this->liquidaciones()->sum('qty');
+    }
+
+    // Restante = cantidad - pagado
+    public function getRestanteAttribute()
+    {
+        return max(0, (int)$this->cantidad - $this->pagado_qty);
+    }
 }

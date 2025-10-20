@@ -151,7 +151,7 @@
 
             {{-- DERECHA: Detalle de Pago --}}
             <div class="col-12 col-lg-5 mb-3">
-                <form id="frmPago" action="{{ route('pagos.store') }}" method="POST">
+                <form id="frmPago" data-action="{{ route('atenciones.facturar', $atencion) }}" method="POST">
                     @csrf
                     <input type="hidden" name="atencion_id" value="{{ $atencion->id }}">
                     <input type="hidden" name="items_payload" id="items_payload"> {{-- JSON serializado --}}
@@ -218,11 +218,87 @@
                                 </div>
                             </div>
 
+                            <div class="accordion" id="accordionInvoice">
+                                <!-- Sección del acordeón -->
+                                <div class="card">
+                                    <div class="card-header p-2" id="headingOneInvoice">
+                                        <p class="mb-0 d-flex justify-content-between">
+                                            <!-- Título del acordeón -->
+                                            <span class="d-flex align-items-center">
+                                            <img src="{{ asset('/images/checkout/invoice.png') }}" alt="Cupon" style="width: 30px; height: 30px; margin-right: 10px;">
+                                            ¿Necesitas Boleta o Factura?
+                                        </span>
+                                            <!-- Link de agregar -->
+                                            <a href="#" class="btn btn-link p-0" data-toggle="collapse" data-target="#collapseOneInvoice" aria-expanded="false" aria-controls="collapseOneInvoice">
+                                                Solicitar
+                                            </a>
+                                        </p>
+                                    </div>
+
+                                    <!-- Contenido del acordeón -->
+                                    <div id="collapseOneInvoice" class="collapse" aria-labelledby="headingOne" data-parent="#accordionInvoice">
+                                        <div class="card-body">
+                                            <!-- Botones radio -->
+                                            <div class="form-group">
+                                                <label>Tipo de comprobante:</label><br>
+
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio" name="invoice_type" id="radio_none" value="ninguno" checked>
+                                                    <label class="form-check-label" for="radio_none">Sin comprobante</label>
+                                                </div>
+
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio" name="invoice_type" id="radio_boleta" value="boleta">
+                                                    <label class="form-check-label" for="radio_boleta">Boleta</label>
+                                                </div>
+
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio" name="invoice_type" id="radio_factura" value="factura">
+                                                    <label class="form-check-label" for="radio_factura">Factura</label>
+                                                </div>
+                                            </div>
+
+                                            <!-- Campos para Boleta -->
+                                            <div id="datos_boleta" class="d-none">
+                                                <div class="form-group">
+                                                    <label for="dni">DNI <span style="color:red;">*</span></label>
+                                                    <input type="text" name="dni" class="form-control" >
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="email_invoice_boleta">Email (Opcional)</label>
+                                                    <input type="text" name="email_invoice_boleta" class="form-control">
+                                                </div>
+                                            </div>
+
+                                            <!-- Campos para Factura -->
+                                            <div id="datos_factura" class="d-none">
+                                                <div class="form-group">
+                                                    <label for="ruc">RUC <span style="color:red;">*</span></label>
+                                                    <input type="text" name="ruc" class="form-control" >
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="razon_social">Razón Social <span style="color:red;">*</span></label>
+                                                    <input type="text" name="razon_social" class="form-control" >
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="direccion_fiscal">Dirección Fiscal <span style="color:red;">*</span></label>
+                                                    <input type="text" name="direccion_fiscal" class="form-control" >
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="email_invoice_factura">Email (Opcional)</label>
+                                                    <input type="text" name="email_invoice_factura" class="form-control">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             {{-- Método de pago --}}
-                            <div class="form-group">
+                            <div class="form-group ">
                                 <img src="{{ asset('/images/checkout/metodo-de-pago.png') }}" alt="Cupon" style="width: 30px; height: 30px; margin-right: 5px;">
 
-                                <label>Método de pago</label>
+                                <label class="mb-2">Método de pago</label>
+
                                 <div id="payment-slider" class="carousel slide w-100 mx-auto" data-ride="carousel" data-interval="false">
                                     <div class="carousel-inner">
                                         @foreach($payment_methods as $index => $method)
@@ -304,7 +380,7 @@
                             </div>
                         </div>
                         <div class="card-footer">
-                            <button type="submit" class="btn btn-success btn-block" id="btnPagar">
+                            <button type="button" class="btn btn-success btn-block" id="btnPagar">
                                 GENERAR COMPROBANTE — S/ <span id="btnTotal">0.00</span>
                             </button>
                         </div>

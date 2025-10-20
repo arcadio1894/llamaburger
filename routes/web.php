@@ -622,7 +622,7 @@ Route::middleware('auth')->group(function (){
 
         Route::post('/atenciones/{atencion}/facturar', [BillingController::class, 'facturar'])
             ->name('atenciones.facturar')
-            ->middleware('permission:pagos.generar');
+            /*->middleware('permission:pagos.generar')*/;
 
         Route::get('/invoices/{invoice}', [BillingController::class, 'show'])->name('invoices.show');
 
@@ -645,6 +645,13 @@ Route::middleware('auth')->group(function (){
 
         Route::get('/atenciones/{atencion}/pago', [PagoController::class, 'create'])
             ->name('pagos.create');
+
+        /*Route::get('/pedidos-restaurante', [AtencionController::class, 'indexPedidosRestaurante'])
+            ->name('pedidos.index');
+        Route::get('/pedidos-restaurante/{atencion}', [AtencionController::class, 'showPedidosRestaurante'])
+            ->name('pedidos.show');
+        Route::get('/pedidos-restaurante/comprobantes/{comprobante}/pdf', [AtencionController::class, 'downloadComprobantePedidosRestaurante'])
+            ->name('comprobantes.download');*/
 
         Route::post('/pagos', [PagoController::class, 'store'])
             ->name('pagos.store');
