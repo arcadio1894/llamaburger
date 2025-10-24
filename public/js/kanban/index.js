@@ -85,7 +85,9 @@ $(document).ready(function () {
                     let orderStatus = String(order.status || '').trim().toLowerCase();
                     return {
                         id: String(order.id),
+                        rawId: String(order.id),
                         status: orderStatus,                           // created/processing/shipped
+                        type: 'order',                                 // <— tipo
                         text: getOrderCardByStatus(order),             // HTML existente
                         content: `Pedido #${order.id}`,
                         [orderStatus]: orderStatus
@@ -101,6 +103,8 @@ $(document).ready(function () {
                     const status = String(t.status || 'created');
                     return {
                         id: String(t.id),                              // "comanda_57"
+                        rawId: String(t.id || t.comanda_id),
+                        type: 'comanda',                               // <— tipo
                         status: status,                                // created/processing/shipped
                         text: getComandaCardByStatus(t),               // HTML para comanda
                         content: `Comanda #${t.numero}`,               // texto
@@ -180,6 +184,8 @@ $(document).ready(function () {
         // ❌ Evitar que se procese automáticamente
         event.cancel = true;
 
+        const ent = parseEntity(itemId); // { type, id }
+
         // 🚫 Definir movimientos NO PERMITIDOS
         const movimientosInvalidos = [
             { de: "shipped", a: "processing" },
@@ -210,7 +216,7 @@ $(document).ready(function () {
             return; // 🔴 Detener la ejecución aquí
         }
 
-        if (oldStatus === "created" && newStatus === "processing") {
+        /*if (oldStatus === "created" && newStatus === "processing") {
             $.confirm({
                 title: "⏳ Tiempo Estimado",
                 content: '<label>¿En cuántos minutos estará listo el pedido?</label>' +
@@ -371,8 +377,16 @@ $(document).ready(function () {
             });
 
             return; // 🔴 Detener la ejecución aquí
-        }
+        }*/
 
+        // === RUTEO DE LÓGICA ===
+        if (ent.type === 'order') {
+            // ⬇️ Tu flujo actual intacto
+            return handleOrderMove(ent.id, oldStatus, newStatus, itemId);
+        } else {
+            // ⬇️ Nueva lógica comanda
+            return handleComandaMove(ent.id, oldStatus, newStatus, itemId);
+        }
     });
 
     $(document).on('click', '[data-anular]', anularOrder);
@@ -489,6 +503,284 @@ $(document).ready(function () {
         });
     });
 });
+
+function handleOrderMove(id, oldStatus, newStatus, itemDomId){
+    // Copia aquí tu lógica actual para orders.
+    // Puedes reutilizar exactamente tus $.confirm y $.post existentes.
+    if (oldStatus === "created" && newStatus === "processing") {
+        $.confirm({
+            title: "⏳ Tiempo Estimado",
+            content: '<label>¿En cuántos minutos estará listo el pedido?</label>' +
+                '<input type="number" placeholder="Ejemplo: 15" class="estimated-time form-control" required />',
+            buttons: {
+                aceptar: {
+                    text: "Aceptar",
+                    btnClass: "btn-blue",
+                    action: function () {
+                        let tiempoEstimado = this.$content.find(".estimated-time").val().trim();
+                        if (!tiempoEstimado || isNaN(tiempoEstimado) || tiempoEstimado <= 0) {
+                            $.alert("⚠️ Debes ingresar un número válido.");
+                            return false;
+                        }
+
+                        // 🚀 Mostrar loader en toda la pantalla
+                        $.blockUI({
+                            message: '<h3>⏳ Procesando solicitud...</h3>',
+                            css: {
+                                border: 'none',
+                                padding: '15px',
+                                backgroundColor: '#000',
+                                '-webkit-border-radius': '10px',
+                                '-moz-border-radius': '10px',
+                                opacity: 0.5,
+                                color: '#fff'
+                            }
+                        });
+
+                        // 🗑️ Eliminar temporalmente el item
+                        //$("#kanban").jqxKanban("removeItem", itemId);
+
+                        // ✅ Enviar actualización al backend
+                        $.post({
+                            url: '/api/orders/update-time',
+                            data: { id: itemId, estimated_time: parseInt(tiempoEstimado), status: "processing" },
+                            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                            success: function (response) {
+                                console.log("✅ Tiempo de cocción actualizado:", response);
+                                $.alert(`✅ Tiempo estimado guardado: ${tiempoEstimado} minutos`);
+
+                                // 🛑 Quitar loader
+                                $.unblockUI();
+
+                                // 🗑️ Eliminar temporalmente el item
+                                //$("#kanban").jqxKanban("removeItem", itemId);
+
+                                // 🔄 Recuperar la orden actualizada y volver a agregarla
+                                //renderOrder(itemId);
+                            },
+                            error: function (error) {
+                                console.error("❌ Error al actualizar el tiempo estimado:", error);
+                                $.alert("⚠️ No se pudo actualizar el tiempo.");
+                            }
+                        });
+                    }
+                },
+                cancelar: {
+                    text: "Cancelar",
+                    action: function () {
+                        console.log("🚫 Movimiento cancelado, devolviendo el pedido a 'Recibido'.");
+
+                        setTimeout(() => {
+                            $("#kanban").jqxKanban("removeItem", itemId);
+                            renderOrder(itemId); // Recuperar y volver a agregar la orden
+                        }, 50);
+                    }
+                }
+            }
+        });
+
+        return; // 🔴 Detener la ejecución aquí
+    }
+
+    if (oldStatus === "processing" && newStatus === "shipped") {
+        let item = itemId;
+        let itemIDClear = item.replace("kanban_", "");
+        console.log(item);
+        console.log(itemIDClear);
+        $.confirm({
+            title: "🚚 Seleccionar Repartidor",
+            content: function () {
+                var self = this;
+                return $.ajax({
+                    url: '/api/distributors', // Ruta para obtener los repartidores
+                    method: 'GET'
+                }).done(function (response) {
+                    let options = response.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                    self.setContent(`
+                        <label>Selecciona el repartidor:</label>
+                        <select class="form-control distributor-select">${options}</select>
+                    `);
+                }).fail(function () {
+                    self.setContent("❌ No se pudieron cargar los repartidores.");
+                });
+            },
+            buttons: {
+                aceptar: {
+                    text: "Asignar Repartidor",
+                    btnClass: "btn-green",
+                    action: function () {
+                        let distributorId = this.$content.find(".distributor-select").val();
+
+                        if (!distributorId) {
+                            $.alert("⚠️ Debes seleccionar un repartidor.");
+                            return false;
+                        }
+
+                        // 🚀 Mostrar loader en toda la pantalla
+                        $.blockUI({
+                            message: '<h3>⏳ Procesando solicitud...</h3>',
+                            css: {
+                                border: 'none',
+                                padding: '15px',
+                                backgroundColor: '#000',
+                                '-webkit-border-radius': '10px',
+                                '-moz-border-radius': '10px',
+                                opacity: 0.5,
+                                color: '#fff'
+                            }
+                        });
+
+                        // ✅ Enviar actualización al backend con el repartidor seleccionado
+                        $.post({
+
+                            url: '/api/orders/update-distributor',
+                            data: { id: itemIDClear, status: "shipped", distributor_id: distributorId },
+                            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                            success: function (response) {
+                                console.log("✅ Pedido asignado a repartidor:", response);
+
+                                // 🛑 Quitar loader
+                                $.unblockUI();
+
+                                // 🗑️ Eliminar temporalmente el item y volver a renderizarlo
+                                //$("#kanban").jqxKanban("removeItem", itemId);
+                                //renderOrder(itemIDClear);
+                            },
+                            error: function (error) {
+                                console.error("❌ Error al actualizar el repartidor:", error);
+                                $.alert("⚠️ No se pudo asignar el repartidor.");
+                            }
+                        });
+                    }
+                },
+                cancelar: {
+                    text: "Cancelar",
+                    action: function () {
+                        console.log("🚫 Movimiento cancelado, devolviendo el pedido a 'Cocinando'.");
+
+                        setTimeout(() => {
+                            $("#kanban").jqxKanban("removeItem", itemId);
+                            renderOrder(itemId);
+                        }, 50);
+                    }
+                }
+            }
+        });
+
+        return; // 🔴 Detener la ejecución aquí
+    }
+}
+
+function handleComandaMove(id, oldStatus, newStatus, itemDomId){
+    // created -> processing : pedir minutos y guardar inicio + ETA
+    if (oldStatus === "created" && newStatus === "processing") {
+        $.confirm({
+            title: "⏳ Tiempo de preparación",
+            content: '<label>¿En cuántos minutos estará lista la comanda?</label>' +
+                '<input type="number" placeholder="Ej: 12" class="eta-minutes form-control" required />',
+            buttons: {
+                aceptar: {
+                    text: "Aceptar",
+                    btnClass: "btn-blue",
+                    action: function () {
+                        const mins = parseInt(this.$content.find('.eta-minutes').val(), 10);
+                        if (!mins || mins <= 0) { $.alert("⚠️ Ingresa minutos válidos."); return false; }
+
+                        $.blockUI({ message: '<h3>Guardando...</h3>' });
+                        $.post({
+                            url: `/api/kitchen/comandas/${id}/start`,
+                            data: { estimated_minutes: mins },
+                            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                            success: function(){
+                                $.unblockUI();
+                                toastr.success('Comanda en cocina. ETA registrada.');
+                                //refreshComanda(id);
+                            },
+                            error: function(){
+                                $.unblockUI();
+                                $.alert('⚠️ No se pudo iniciar cocina.');
+                            }
+                        });
+                    }
+                },
+                cancelar: { text: "Cancelar" }
+            }
+        });
+        return;
+    }
+
+    // processing -> shipped : listo (sin repartidor)
+    if (oldStatus === "processing" && newStatus === "shipped") {
+        $.blockUI({ message: '<h3>Marcando como listo...</h3>' });
+        $.post({
+            url: `/api/kitchen/comandas/${id}/ready`,
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function(){
+                $.unblockUI();
+                toastr.success('Comanda lista. Se notificará al mozo.');
+                //refreshComanda(id);
+            },
+            error: function(){
+                $.unblockUI();
+                $.alert('⚠️ No se pudo marcar como listo.');
+            }
+        });
+        return;
+    }
+}
+
+function refreshComanda(id) {
+    $.get(`/api/kitchen/comandas/${id}`, function(t) {
+        const status = normalizeComandaStatusToColumn(t);
+        const itemId = String(t.id || t.comanda_id); // ← sin prefijo
+
+        const newItem = {
+            id: itemId,
+            rawId: itemId,
+            type: 'comanda',
+            status: status,
+            text: getComandaCardByStatus(t),
+            content: `Comanda #${t.numero}`
+        };
+        newItem[status] = status; // jqxKanban requiere el dataField
+
+        // eliminar si existe y reinsertar
+        removeKanbanItemByIdSafe(itemId);
+        if ($("#kanban").length && $("#kanban").data('jqxKanban')) {
+            $("#kanban").jqxKanban("addItem", newItem);
+        }
+    });
+}
+
+function normalizeComandaStatusToColumn(t) {
+    const raw = (t.estado || t.status || 'enviada').toString().toLowerCase();
+    // mapea a dataField del Kanban
+    switch (raw) {
+        case 'enviada':    return 'created';
+        case 'cocinando':  return 'processing';
+        case 'lista':      return 'shipped';
+        case 'servida':    return 'completed'; // fuera del tablero si filtras
+        case 'cancelada':  return 'cancelled'; // fuera del tablero si filtras
+        case 'created':    // compatabilidad antigua
+        case 'processing':
+        case 'shipped':
+            return raw;
+        default:
+            return 'created';
+    }
+}
+
+function removeKanbanItemByIdSafe(id) {
+    try {
+        const items = $("#kanban").jqxKanban("getItems") || [];
+        const ids = items.map(it => String(it.id));
+        const variants = [String(id), `comanda_${id}`, `kanban_${id}`];
+        const existing = variants.find(v => ids.includes(v));
+        if (existing) $("#kanban").jqxKanban("removeItem", existing);
+    } catch (err) {
+        console.warn('removeKanbanItemByIdSafe fallback:', err);
+    }
+}
 
 function removeDummyItems() {
     var items = $("#kanban").jqxKanban("getItems");
@@ -882,7 +1174,87 @@ function getComandaCardCreated(t) {
     </div>`;
 }
 
-function getComandaCardByStatus(ticket){
-    // por ahora mismo template; luego personalizamos por columna
-    return getComandaCardCreated(ticket);
+function getComandaCardByStatus(t){
+    const st = String(t.status||'created');
+    if (st === 'processing') return getComandaCardProcessing(t);
+    if (st === 'shipped')    return getComandaCardShipped(t);
+    return getComandaCardCreated(t);
+}
+
+function getComandaCardProcessing(t){
+    // calcula textos ETA si están
+    let etaTxt = '';
+    if (t.estimated_ready_at) {
+        const d = new Date(t.estimated_ready_at);
+        const time = d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+        const date = d.toLocaleDateString('es-PE', {year:'numeric', month:'short', day:'2-digit'});
+        etaTxt = `<div class="mt-1"><small><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+    }
+
+    return `
+  <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
+    <div class="widget-user-header bg-gradient-success" style="padding:8px;">
+      <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+      <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+        Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+      </h5>
+      ${etaTxt}
+    </div>
+    <div class="card-footer" style="padding:8px;">
+      ${comandaFooterLeft(t)}
+    </div>
+  </div>`;
+}
+
+function getComandaCardShipped(t){
+    return `
+    <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
+      <div class="widget-user-header bg-gradient-info" style="padding:8px;">
+        <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+        <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+          Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+        </h5>
+      </div>
+      <div class="card-footer" style="padding:8px;">
+        <div class="row">
+          <div class="col-sm-12">
+            ${comandaFooterLeft(t)}
+          </div>
+          <div class="col-sm-12">
+            <a href="#" class="btn btn-sm btn-success btn-block" data-comanda-entregar="${t.id || t.comanda_id}">
+              <strong>ENTREGAR</strong>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function comandaFooterLeft(t){
+    const url_imprimir = document.location.origin + '/imprimir/comanda-mesa/' + (t.comanda_id||t.id);
+    return `
+  <div class="row">
+    <div class="col-sm-6 border-right">
+      <div class="description-block">
+        <a href="${url_imprimir}" target="_blank">
+          <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">VER COMANDA</h6>
+        </a>
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="description-block">
+        <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">S/ ${Number(t.total||0).toFixed(2)}</h6>
+      </div>
+    </div>
+  </div>`;
+}
+
+function parseEntity(itemIdOld){
+    // "order_123" | "comanda_57"
+    // Quitar si comienza en kanban_
+    var itemId = itemIdOld.replace('kanban_','');
+    if (itemId.indexOf('order_') === 0)   return { type:'order',   id: itemId.replace('order_','') };
+    if (itemId.indexOf('comanda_') === 0) return { type:'comanda', id: itemId.replace('comanda_','') };
+    // fallback: intenta detectar por prefijos viejos
+    return { type: 'order', id: itemId.replace('kanban_','') };
 }

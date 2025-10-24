@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Events\ComandaCreated;
+use App\Events\ComandaStatusUpdated;
 use App\Models\Atencion;
 use App\Models\Comanda;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -80,7 +82,7 @@ class ComandaController extends Controller
         // Ajusta si tus nombres de estado exactos difieren
         // Estados de comanda: 'borrador' (no va a kanban), 'enviada', 'cocinando', 'servida'
         $comandas = Comanda::with(['atencion.mesa','atencion.mozo'])
-            ->whereIn('estado', ['enviada','cocinando','servida'])
+            ->whereIn('estado', ['enviada','cocinando','lista'])
             ->orderBy('id','desc')
             ->get();
 
@@ -105,12 +107,93 @@ class ComandaController extends Controller
 
     private function mapComandaToKanban($status)
     {
-        // Mapea tu estado → columna del kanban
-        switch (trim(strtolower($status))) {
-            case 'enviada':    return 'created';    // Recibido
-            case 'cocinando':  return 'processing'; // Cocinando
-            case 'servida':    return 'shipped';    // En Trayecto (listo para recoger)
-            default:           return 'created';
+        // Normalizamos el valor recibido
+        $s = trim(strtolower($status));
+
+        switch ($s) {
+            case 'enviada':
+                return 'created';      // 📥 Recibido en cocina
+            case 'cocinando':
+                return 'processing';   // 🔥 En preparación
+            case 'lista':
+                return 'shipped';      // 🍽️ Listo para entregar
+            case 'servida':
+                return 'completed';    // ✅ Entregado al cliente (fuera del kanban)
+            case 'cancelada':
+                return 'cancelled';    // ❌ Pedido cancelado (fuera del kanban)
+            default:
+                return 'created';      // Valor por defecto
         }
+    }
+
+    public function show(Comanda $comanda)
+    {
+        // agrega relaciones si existen: mesa, mozo, etc.
+        return response()->json([
+            'id'    => $comanda->id,
+            'numero'=> $comanda->numero,
+            'mesa'  => optional($comanda->atencion->mesa)->nombre,
+            'mozo'  => optional($comanda->atencion->mozo)->nombre,
+            'total' => $comanda->total,
+            'status'=> $this->mapComandaToKanban($comanda->estado),
+            'started_cooking_at' => $comanda->started_cooking_at,
+            'estimated_minutes'  => $comanda->estimated_minutes,
+            'estimated_ready_at' => $comanda->estimated_ready_at,
+            'ready_at'           => $comanda->ready_at,
+            'delivered_at'       => $comanda->delivered_at,
+        ]);
+    }
+
+    public function start(Request $req, Comanda $comanda)
+    {
+        $req->validate([
+            'estimated_minutes' => 'required|integer|min:1|max:600',
+        ]);
+
+        $start = now('America/Lima');
+        $eta = (clone $start)->addMinutes((int)$req->input('estimated_minutes'));
+
+        $comanda->update([
+            'estado' => 'cocinando',
+            'started_cooking_at' => $start,
+            'estimated_minutes' => (int)$req->input('estimated_minutes'),
+            'estimated_ready_at' => $eta,
+        ]);
+
+        // 🔥 EMITIR EVENTO (repinta en Kanban)
+        broadcast(new ComandaStatusUpdated($comanda));
+
+        return response()->json([
+            'ok' => true,
+            'estimated_ready_at' => $eta->toDateTimeString(),
+        ]);
+    }
+
+    public function ready(Comanda $comanda)
+    {
+        $comanda->update([
+            'estado'   => 'lista',                              // Kanban → "Listo"
+            'ready_at' => Carbon::now('America/Lima'),
+        ]);
+
+        // 🔔 Emitir evento para repintar en el Kanban (mismo canal que .comanda.created)
+        broadcast(new ComandaStatusUpdated($comanda));
+
+        return response()->json([
+            'ok' => true,
+            'id' => $comanda->id,
+            'estado' => $comanda->estado,
+            'ready_at' => optional($comanda->ready_at)->toDateTimeString(),
+        ]);
+    }
+
+    public function deliver(Comanda $comanda)
+    {
+        $comanda->update([
+            'estado'       => 'servida',
+            'delivered_at' => now(),
+        ]);
+
+        return response()->json(['ok' => true]);
     }
 }

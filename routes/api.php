@@ -50,3 +50,10 @@ Route::post('/orders/update-distributor', [OrderController::class, 'updateDistri
 Route::post('/orders/entregar', [OrderController::class, 'entregarOrder']);
 
 Route::get('/kitchen/comandas', [ComandaController::class, 'openTickets']);
+
+Route::prefix('kitchen/comandas')->group(function () {
+    Route::get('{comanda}',  [ComandaController::class, 'show']);
+    Route::post('{comanda}/start',   [ComandaController::class, 'start']);   // pide minutos
+    Route::post('{comanda}/ready',   [ComandaController::class, 'ready']);
+    Route::post('{comanda}/deliver', [ComandaController::class, 'deliver']);
+});

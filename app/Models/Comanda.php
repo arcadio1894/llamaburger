@@ -18,7 +18,12 @@ class Comanda extends Model
         'descuento',
         'igv',
         'total',
-        'sent_to_kitchen_at'
+        'sent_to_kitchen_at',
+        'started_cooking_at',
+        'estimated_minutes',
+        'estimated_ready_at',
+        'ready_at',
+        'delivered_at',
     ];
 
     public function atencion()

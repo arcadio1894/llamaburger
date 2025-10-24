@@ -40,21 +40,49 @@ function getComandaCardCreated(t) {
 }
 
 // Si quieres más adelante distintos layouts por estado:
-function getComandaCardByStatus(ticket){
+/*function getComandaCardByStatus(ticket){
     // de momento usamos mismo card para created/processing/shipped
     return getComandaCardCreated(ticket);
-}
+}*/
 
 // Remueve ítem (si existiera) por id exacto
-function removeKanbanItemById(rawId){
+function removeKanbanItemById(comandaId){
+    // target numérico como string (p.ej. "13")
+    const target = String(comandaId)
+        .replace(/^kanban_/i, '')
+        .replace(/^comanda_/i, '')
+        .replace(/_(\d+)$/i, ''); // si te llega "kanban_comanda_13_84" -> "kanban_comanda_13" -> "13"
+
+    console.log("🧹 REMOVE target:", target);
+
     try {
-        let items = $("#kanban").jqxKanban("getItems") || [];
-        items.forEach(function(it){
-            if (String(it.id) === String(rawId)) {
-                $("#kanban").jqxKanban("removeItem", it.id);
+        const items = $("#kanban").jqxKanban("getItems") || [];
+
+        items.forEach(function(item) {
+            const idStr = String(item.id || '');
+
+            // 1) Coincidencias directas
+            if (idStr === `comanda_${target}` ||
+                idStr === `kanban_comanda_${target}` ||
+                idStr.indexOf(`kanban_comanda_${target}_`) === 0) {
+                console.log("📌 Eliminando (match directo):", idStr);
+                $("#kanban").jqxKanban("removeItem", item.id);
+                return;
+            }
+
+            // 2) Normalización general: quitar "kanban_" inicial y sufijo "_NN"
+            let norm = idStr.replace(/^kanban_/i, '');
+            norm = norm.replace(/_(\d+)$/i, ''); // comanda_13_84 -> comanda_13
+
+            // Si después de normalizar queda exactamente "comanda_13", elimino
+            if (norm === `comanda_${target}`) {
+                console.log("📌 Eliminando (normalizado):", idStr, "→", norm);
+                $("#kanban").jqxKanban("removeItem", item.id);
             }
         });
-    } catch (e) {}
+    } catch (e) {
+        console.warn('⚠️ removeKanbanItemById fallback:', e);
+    }
 }
 
 window.Echo.channel('kitchenTickets')
@@ -72,6 +100,7 @@ window.Echo.channel('kitchenTickets')
             text: getComandaCardByStatus(t),   // HTML
             content: `Comanda #${t.numero}`,
             tags: "comanda",
+            type: 'comanda',                         // <— tipo
             color: "moccasin"                  // borde opcional
         };
         item[status] = status;               // dataField de la columna
@@ -84,3 +113,93 @@ window.Echo.channel('kitchenTickets')
             $("#kanban").jqxKanban("addItem", item);
         }
     });
+
+// 👇 NUEVO EVENTO: cuando una comanda cambia de estado (start/ready/deliver)
+window.Echo.channel('kitchenTickets')
+    .listen('.comanda.updated', (e) => {
+        const t = e.data; // mismo formato que el broadcastWith() del evento ComandaStatusUpdated
+
+        console.log('🔄 Comanda actualizada:', t);
+
+        const status = String(t.estado);
+        const itemId = String(t.id); // 👈 aquí colocas esta línea
+        console.log('🔄 ITEMID:', itemId);
+        console.log('🔄 t.estado:', t.estado);
+        const item = {
+            id: "comanda_"+itemId,
+            status: status,
+            text: getComandaCardByStatus(t),
+            content: `Comanda #${t.numero}`,
+            tags: "comanda",
+            type: 'comanda',
+            color: "moccasin"
+        };
+        item[status] = status;
+        console.log('🔄 item:', item);
+        // Quitar tarjeta anterior si ya existía
+        removeKanbanItemById(itemId);
+        console.log('🔄 Agrgando:', item);
+        $("#kanban").jqxKanban("addItem", item);
+        console.log('🔄 Agrgado:', item);
+        // Reagregar tarjeta con el nuevo estado
+        /*if ($("#kanban").length && $("#kanban").data('jqxKanban')) {
+            $("#kanban").jqxKanban("addItem", item);
+        }*/
+    });
+
+function getComandaCardByStatus(t){
+    const st = String(t.estado||'created');
+    console.log(st);
+    if (st === 'processing') return getComandaCardProcessing(t);
+    if (st === 'shipped')    return getComandaCardShipped(t);
+    return getComandaCardCreated(t);
+}
+
+function getComandaCardProcessing(t){
+    // calcula textos ETA si están
+    let etaTxt = '';
+    if (t.estimated_ready_at) {
+        const d = new Date(t.estimated_ready_at);
+        const time = d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+        const date = d.toLocaleDateString('es-PE', {year:'numeric', month:'short', day:'2-digit'});
+        etaTxt = `<div class="mt-1"><small><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+    }
+
+    return `
+  <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
+    <div class="widget-user-header bg-gradient-success" style="padding:8px;">
+      <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+      <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+        Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+      </h5>
+      ${etaTxt}
+    </div>
+    <div class="card-footer" style="padding:8px;">
+      ${comandaFooterLeft(t)}
+    </div>
+  </div>`;
+}
+
+function getComandaCardShipped(t){
+    return `
+    <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
+      <div class="widget-user-header bg-gradient-info" style="padding:8px;">
+        <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+        <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+          Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+        </h5>
+      </div>
+      <div class="card-footer" style="padding:8px;">
+        <div class="row">
+          <div class="col-sm-12">
+            ${comandaFooterLeft(t)}
+          </div>
+          <div class="col-sm-12">
+            <a href="#" class="btn btn-sm btn-success btn-block" data-comanda-entregar="${t.id || t.comanda_id}">
+              <strong>ENTREGAR</strong>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}

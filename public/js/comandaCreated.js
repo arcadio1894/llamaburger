@@ -13,21 +13,42 @@ function getComandaCardCreated(t) {
 }
 
 // Si quieres más adelante distintos layouts por estado:
-function getComandaCardByStatus(ticket) {
-  // de momento usamos mismo card para created/processing/shipped
-  return getComandaCardCreated(ticket);
-}
+/*function getComandaCardByStatus(ticket){
+    // de momento usamos mismo card para created/processing/shipped
+    return getComandaCardCreated(ticket);
+}*/
 
 // Remueve ítem (si existiera) por id exacto
-function removeKanbanItemById(rawId) {
+function removeKanbanItemById(comandaId) {
+  // target numérico como string (p.ej. "13")
+  var target = String(comandaId).replace(/^kanban_/i, '').replace(/^comanda_/i, '').replace(/_(\d+)$/i, ''); // si te llega "kanban_comanda_13_84" -> "kanban_comanda_13" -> "13"
+
+  console.log("🧹 REMOVE target:", target);
   try {
     var items = $("#kanban").jqxKanban("getItems") || [];
-    items.forEach(function (it) {
-      if (String(it.id) === String(rawId)) {
-        $("#kanban").jqxKanban("removeItem", it.id);
+    items.forEach(function (item) {
+      var idStr = String(item.id || '');
+
+      // 1) Coincidencias directas
+      if (idStr === "comanda_".concat(target) || idStr === "kanban_comanda_".concat(target) || idStr.indexOf("kanban_comanda_".concat(target, "_")) === 0) {
+        console.log("📌 Eliminando (match directo):", idStr);
+        $("#kanban").jqxKanban("removeItem", item.id);
+        return;
+      }
+
+      // 2) Normalización general: quitar "kanban_" inicial y sufijo "_NN"
+      var norm = idStr.replace(/^kanban_/i, '');
+      norm = norm.replace(/_(\d+)$/i, ''); // comanda_13_84 -> comanda_13
+
+      // Si después de normalizar queda exactamente "comanda_13", elimino
+      if (norm === "comanda_".concat(target)) {
+        console.log("📌 Eliminando (normalizado):", idStr, "→", norm);
+        $("#kanban").jqxKanban("removeItem", item.id);
       }
     });
-  } catch (e) {}
+  } catch (e) {
+    console.warn('⚠️ removeKanbanItemById fallback:', e);
+  }
 }
 window.Echo.channel('kitchenTickets').subscribed(function () {
   return console.log('✅ Suscrito a kitchenTickets');
@@ -46,6 +67,8 @@ window.Echo.channel('kitchenTickets').subscribed(function () {
     // HTML
     content: "Comanda #".concat(t.numero),
     tags: "comanda",
+    type: 'comanda',
+    // <— tipo
     color: "moccasin" // borde opcional
   };
   item[status] = status; // dataField de la columna
@@ -58,5 +81,64 @@ window.Echo.channel('kitchenTickets').subscribed(function () {
     $("#kanban").jqxKanban("addItem", item);
   }
 });
+
+// 👇 NUEVO EVENTO: cuando una comanda cambia de estado (start/ready/deliver)
+window.Echo.channel('kitchenTickets').listen('.comanda.updated', function (e) {
+  var t = e.data; // mismo formato que el broadcastWith() del evento ComandaStatusUpdated
+
+  console.log('🔄 Comanda actualizada:', t);
+  var status = String(t.estado);
+  var itemId = String(t.id); // 👈 aquí colocas esta línea
+  console.log('🔄 ITEMID:', itemId);
+  console.log('🔄 t.estado:', t.estado);
+  var item = {
+    id: "comanda_" + itemId,
+    status: status,
+    text: getComandaCardByStatus(t),
+    content: "Comanda #".concat(t.numero),
+    tags: "comanda",
+    type: 'comanda',
+    color: "moccasin"
+  };
+  item[status] = status;
+  console.log('🔄 item:', item);
+  // Quitar tarjeta anterior si ya existía
+  removeKanbanItemById(itemId);
+  console.log('🔄 Agrgando:', item);
+  $("#kanban").jqxKanban("addItem", item);
+  console.log('🔄 Agrgado:', item);
+  // Reagregar tarjeta con el nuevo estado
+  /*if ($("#kanban").length && $("#kanban").data('jqxKanban')) {
+      $("#kanban").jqxKanban("addItem", item);
+  }*/
+});
+function getComandaCardByStatus(t) {
+  var st = String(t.estado || 'created');
+  console.log(st);
+  if (st === 'processing') return getComandaCardProcessing(t);
+  if (st === 'shipped') return getComandaCardShipped(t);
+  return getComandaCardCreated(t);
+}
+function getComandaCardProcessing(t) {
+  // calcula textos ETA si están
+  var etaTxt = '';
+  if (t.estimated_ready_at) {
+    var d = new Date(t.estimated_ready_at);
+    var time = d.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    var date = d.toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit'
+    });
+    etaTxt = "<div class=\"mt-1\"><small><b>ETA:</b> ".concat(date, " ").concat(time, " (").concat(t.estimated_minutes || '-', " min)</small></div>");
+  }
+  return "\n  <div class=\"card card-widget widget-user\" style=\"margin:5px;padding:5px;width:100%;min-height:120px;\">\n    <div class=\"widget-user-header bg-gradient-success\" style=\"padding:8px;\">\n      <span class=\"widget-user-desc\" style=\"font-size:14px\">Comanda #".concat(t.numero, "</span>\n      <h5 class=\"widget-user-username\" style=\"font-size:.9rem;padding-top:3px\">\n        Mesa ").concat(t.mesa || '-', " <br> Mozo: ").concat(t.mozo || '-', "\n      </h5>\n      ").concat(etaTxt, "\n    </div>\n    <div class=\"card-footer\" style=\"padding:8px;\">\n      ").concat(comandaFooterLeft(t), "\n    </div>\n  </div>");
+}
+function getComandaCardShipped(t) {
+  return "\n    <div class=\"card card-widget widget-user\" style=\"margin:5px;padding:5px;width:100%;min-height:120px;\">\n      <div class=\"widget-user-header bg-gradient-info\" style=\"padding:8px;\">\n        <span class=\"widget-user-desc\" style=\"font-size:14px\">Comanda #".concat(t.numero, "</span>\n        <h5 class=\"widget-user-username\" style=\"font-size:.9rem;padding-top:3px\">\n          Mesa ").concat(t.mesa || '-', " <br> Mozo: ").concat(t.mozo || '-', "\n        </h5>\n      </div>\n      <div class=\"card-footer\" style=\"padding:8px;\">\n        <div class=\"row\">\n          <div class=\"col-sm-8\">\n            ").concat(comandaFooterLeft(t), "\n          </div>\n          <div class=\"col-sm-4\">\n            <a href=\"#\" class=\"btn btn-success btn-block\" data-comanda-entregar=\"").concat(t.id || t.comanda_id, "\">\n              <strong>ENTREGAR</strong>\n            </a>\n          </div>\n        </div>\n      </div>\n    </div>");
+}
 /******/ })()
 ;

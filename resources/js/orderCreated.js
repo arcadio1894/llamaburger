@@ -114,6 +114,7 @@ window.Echo.channel('ordersCreated')
             text: getOrderCardByStatus(order),
             content: `Pedido #${order.id}`, // Contenido en HTML
             tags: "pedido",
+            type: 'order',
             color: obtenerColorEstado(order.status) // Función para asignar color
         };
 

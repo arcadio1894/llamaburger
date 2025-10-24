@@ -6538,6 +6538,7 @@ window.Echo.channel('ordersCreated').subscribed(function () {
     content: "Pedido #".concat(order.id),
     // Contenido en HTML
     tags: "pedido",
+    type: 'order',
     color: obtenerColorEstado(order.status) // Función para asignar color
   };
 
