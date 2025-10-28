@@ -158,11 +158,17 @@
                             </div>
 
                             <div class="p-3 border-top bg-white ed-actions d-flex gap-2">
-                                <a href="{{ route('pedido.externo.comanda.show', [$a->id, 1]) }}"
-                                   class="btn btn-outline-primary w-100">
-                                    Abrir
-                                </a>
-
+                                @if(in_array($estado, ['cerrada']))
+                                    <button data-ver_detalles data-url="{{ route('pedido.externo.comanda.verDetalles', [$a->id, 1]) }}"
+                                       class="btn btn-outline-primary w-100">
+                                        Ver detalles
+                                    </button>
+                                @else
+                                    <a href="{{ route('pedido.externo.comanda.show', [$a->id, 1]) }}"
+                                       class="btn btn-outline-primary w-100">
+                                        Abrir
+                                    </a>
+                                @endif
                                 @if(in_array($estado, ['abierta','en_proceso','por_pagar']))
                                     <form class="w-100" method="POST" action="{{ route('pedido.externo.ir_pagar', $a) }}">
                                         @csrf
@@ -186,4 +192,8 @@
         @endif
 
     </div>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('js/pedido_externo/index.js') }}"></script>
 @endsection

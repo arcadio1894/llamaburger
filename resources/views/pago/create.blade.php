@@ -137,6 +137,18 @@
                                 </div>
                             @empty
                                 <div class="p-3 text-center text-muted">No hay productos pendientes.</div>
+                                @if($esExterno)
+                                    <a href="{{ route('pedido.externo.index') }}"
+                                       class="btn btn-outline-primary w-100">
+                                        Regresar al listado de pedidos externos
+                                    </a>
+                                @else
+                                    <a href="{{ route('salas.index') }}"
+                                       class="btn btn-outline-primary w-100">
+                                        Regresar a mesas
+                                    </a>
+                                @endif
+
                             @endforelse
                         </div>
                     </div>
@@ -361,23 +373,47 @@
                             </div>
 
                             <hr>
-                            {{-- Totales --}}
+                            <!-- Totales (versión Perú: muestra base imponible e IGV) -->
+                            <hr class="mt-0">
+
+                            {{-- Subtotal antes de descuento (suma de líneas) --}}
                             <div class="d-flex justify-content-between">
                                 <span>Subtotal</span>
                                 <strong>S/ <span id="subtotal">0.00</span></strong>
                             </div>
+
+                            {{-- Descuento global del comprobante (resta a la base) --}}
                             <div class="d-flex justify-content-between">
                                 <span>Descuento</span>
                                 <strong>- S/ <span id="desc">0.00</span></strong>
                             </div>
+
+                            {{-- Base imponible (subtotal - descuento) --}}
+                            <div class="d-flex justify-content-between">
+                                <span>Base imponible</span>
+                                <strong>S/ <span id="base">0.00</span></strong>
+                            </div>
+
+                            {{-- IGV (18% de la base imponible) --}}
+                            <div class="d-flex justify-content-between">
+                                <span>IGV (<span id="igvRateText">18%</span>)</span>
+                                <strong>S/ <span id="igv">0.00</span></strong>
+                            </div>
+
+                            {{-- Propina (no gravada) --}}
                             <div class="d-flex justify-content-between">
                                 <span>Propina</span>
                                 <strong>+ S/ <span id="prop">0.00</span></strong>
                             </div>
+
+                            {{-- Total a pagar (base + igv + propina) --}}
                             <div class="d-flex justify-content-between h5 mt-2">
                                 <span>Total a pagar</span>
                                 <strong>S/ <span id="total">0.00</span></strong>
                             </div>
+
+                            {{-- Opcional: tasa IGV para que el JS la lea (default 18%) --}}
+                            <input type="hidden" id="igvRate" value="0.18">
                         </div>
                         <div class="card-footer">
                             <button type="button" class="btn btn-success btn-block" id="btnPagar">

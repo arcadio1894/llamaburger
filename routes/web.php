@@ -638,6 +638,8 @@ Route::middleware('auth')->group(function (){
             Route::post('/{atencion}/ir-a-pagar', [PedidoExternoController::class, 'irPagar'])->name('ir_pagar');
             Route::get('/{atencion}/comanda/{id_comanda}', [PedidoExternoController::class, 'showComanda'])
                 ->name('comanda.show');
+            Route::get('/comanda/detalles/{atencion}', [PedidoExternoController::class, 'verDetalles'])
+                ->name('comanda.verDetalles');
         });
 
         Route::post('/atenciones/{atencion}/ir-a-pagar', [AtencionController::class, 'irPagar'])

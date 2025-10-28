@@ -43,20 +43,13 @@ class GenerateInvoiceService
         }
 
         // =====================================================
-        // 1. Construcción de los ítems seleccionados o fallback
+        // 1) Ítems seleccionados (o fallback: todo pendiente)
         // =====================================================
         $allItems = collect();
 
         if (!empty($selectedItems)) {
-            // IDs seleccionados desde el frontend
-            $ids = collect($selectedItems)
-                ->pluck('id')
-                ->map(function ($v) {
-                    return (int) $v;
-                })
-                ->filter()
-                ->all();
-            // Traer con sumatoria real de liquidaciones
+            $ids = collect($selectedItems)->pluck('id')->map(function($v){ return (int)$v; })->filter()->all();
+
             $items = ComandaItem::withSum('liquidaciones as pagado_qty', 'qty')
                 ->whereIn('id', $ids)
                 ->get()
@@ -71,14 +64,9 @@ class GenerateInvoiceService
                 $it = $items->get($id);
                 if (!$it) continue;
 
-                // Calcular restante real desde DB
-                $pagado = (int)($it->pagado_qty ?? 0);
+                $pagado   = (int)($it->pagado_qty ?? 0);
                 $restante = max(0, (int)$it->cantidad - $pagado);
-
-                $qty = ($restante > 0)
-                    ? min($req, $restante)
-                    : 0;
-
+                $qty      = ($restante > 0) ? min($req, $restante) : 0;
                 if ($qty <= 0) continue;
 
                 $allItems->push([
@@ -86,16 +74,19 @@ class GenerateInvoiceService
                     'product_id'      => $it->product_id,
                     'nombre'          => $it->nombre,
                     'cantidad'        => $qty,
-                    'precio_unit'     => (float)$it->precio_unit,
+                    'precio_unit'     => (float)$it->precio_unit, // <-- PRECIO CON IGV
                 ]);
             }
         }
 
-        // Fallback: sin selección (facturar todo lo pendiente)
         if ($allItems->isEmpty()) {
-            $comandas = $atencion->comandas()->where('estado', '!=', 'borrador')->with(['items.liquidaciones'])->get();
+            $comandas = $atencion->comandas()
+                ->where('estado', '!=', 'borrador')
+                ->with(['items.liquidaciones'])
+                ->get();
+
             foreach ($comandas->flatMap->items as $it) {
-                $pagado = (int)($it->liquidaciones->sum('qty'));
+                $pagado   = (int)$it->liquidaciones->sum('qty');
                 $restante = max(0, (int)$it->cantidad - $pagado);
                 if ($restante <= 0) continue;
 
@@ -104,7 +95,7 @@ class GenerateInvoiceService
                     'product_id'      => $it->product_id,
                     'nombre'          => $it->nombre,
                     'cantidad'        => $restante,
-                    'precio_unit'     => (float)$it->precio_unit,
+                    'precio_unit'     => (float)$it->precio_unit, // <-- PRECIO CON IGV
                 ]);
             }
         }
@@ -114,39 +105,49 @@ class GenerateInvoiceService
         }
 
         // =====================================================
-        // 2. Totales e impuestos
+        // 2) Parámetros & totales acumuladores
         // =====================================================
-        $igvRate = 0.18;
-        $op_gravada = $op_exonerada = $op_inafecta = $descuento = $igv = $total = 0;
+        $igvRate = 0.18; // 18%
+        // acumuladores "brutos" (antes de descuento)
+        $sumBase   = 0.0; // suma de VALOR (sin igv) de las líneas
+        $sumIgv    = 0.0; // suma de IGV por línea
+        $sumTotal  = 0.0; // suma de TOTALES (precio con igv) de las líneas
+
+        // para cabecera que guardaremos
+        $op_gravada   = 0.0;
+        $op_exonerada = 0.0;
+        $op_inafecta  = 0.0; // aquí caerá la propina
+        $descuento    = 0.0;
+        $igv          = 0.0;
+        $total        = 0.0;
 
         // =====================================================
-        // 3. Cliente snapshot
+        // 3) Cliente snapshot
         // =====================================================
-        $customer = !empty($billingData['customer_id'])
-            ? Cliente::find($billingData['customer_id'])
-            : null;
-        $tipo = $billingData['tipo'] ?? 'ticket';
+        $customer = !empty($billingData['customer_id']) ? Cliente::find($billingData['customer_id']) : null;
+        $tipo     = $billingData['tipo'] ?? 'ticket';
 
         if ($tipo === 'boleta' && empty($billingData['cliente_doc_num']) && $customer && $customer->dni) {
             $billingData['cliente_doc_tipo'] = 'DNI';
-            $billingData['cliente_doc_num'] = $customer->dni;
+            $billingData['cliente_doc_num']  = $customer->dni;
         }
         if ($tipo === 'factura' && empty($billingData['cliente_doc_num']) && $customer && $customer->ruc) {
             $billingData['cliente_doc_tipo'] = 'RUC';
-            $billingData['cliente_doc_num'] = $customer->ruc;
+            $billingData['cliente_doc_num']  = $customer->ruc;
         }
         if ($tipo === 'factura' && ($billingData['cliente_doc_tipo'] ?? '') !== 'RUC') {
             throw ValidationException::withMessages(['cliente_doc_tipo' => 'Para FACTURA el documento debe ser RUC.']);
         }
 
         // =====================================================
-        // 4. Transacción principal
+        // 4) Transacción principal
         // =====================================================
         return DB::transaction(function () use (
             $atencion, $tipo, $customer, $billingData, $allItems,
-            $igvRate, &$op_gravada, &$op_exonerada, &$op_inafecta, &$descuento, &$igv, &$total, $paymentData
+            $igvRate, &$sumBase, &$sumIgv, &$sumTotal,
+            &$op_gravada, &$op_exonerada, &$op_inafecta, &$descuento, &$igv, &$total, $paymentData
         ) {
-            // Numeración solo para tickets locales
+            // Numeración local solo para tickets
             $serie = $numero = null;
             if ($tipo === 'ticket') {
                 $counter = DB::table('invoice_counters')->where('tipo', 'ticket')->lockForUpdate()->first();
@@ -157,31 +158,20 @@ class GenerateInvoiceService
                 }
             }
 
-            // Calcula snapshots seguros para PHP 7.3
-            $customerId        = $customer ? $customer->id : null;
-            $clienteNombre     = isset($billingData['cliente_nombre'])
-                ? $billingData['cliente_nombre']
-                : ($customer ? $customer->nombre : null);
-            $clienteDocTipo    = isset($billingData['cliente_doc_tipo'])
-                ? $billingData['cliente_doc_tipo']
-                : null;
+            // Snapshots de cliente (compatibles con PHP 7.3)
+            $customerId     = $customer ? $customer->id : null;
+            $clienteNombre  = isset($billingData['cliente_nombre']) ? $billingData['cliente_nombre'] : ($customer ? $customer->nombre : null);
+            $clienteDocTipo = isset($billingData['cliente_doc_tipo']) ? $billingData['cliente_doc_tipo'] : null;
 
-            // Doc num: primero lo que viene por request; si no, RUC si existe en el cliente, si no, DNI; si no hay cliente, null
             if (isset($billingData['cliente_doc_num'])) {
                 $clienteDocNum = $billingData['cliente_doc_num'];
             } else {
-                if ($customer) {
-                    $clienteDocNum = $customer->ruc ? $customer->ruc : ($customer->dni ? $customer->dni : null);
-                } else {
-                    $clienteDocNum = null;
-                }
+                $clienteDocNum = $customer ? ($customer->ruc ?: ($customer->dni ?: null)) : null;
             }
 
-            $clienteDireccion  = isset($billingData['cliente_direccion'])
-                ? $billingData['cliente_direccion']
-                : ($customer ? $customer->direccion : null);
+            $clienteDireccion = isset($billingData['cliente_direccion']) ? $billingData['cliente_direccion'] : ($customer ? $customer->direccion : null);
 
-            // Crear cabecera
+            // Crear cabecera preliminar (totales se actualizan luego)
             $inv = new Invoice();
             $inv->fill([
                 'atencion_id'       => $atencion->id,
@@ -196,18 +186,22 @@ class GenerateInvoiceService
                 'moneda'            => 'PEN',
                 'estado'            => 'emitido',
                 'issue_date'        => now(),
+                'extra'             => [
+                    'igv_incluido' => true,  // marca para auditoría
+                ],
             ]);
-
             $inv->save();
 
-            // Detalle
+            // -------------------------
+            // Detalle (precios con IGV)
+            // -------------------------
             foreach ($allItems as $sel) {
                 $cantidad     = (float)$sel['cantidad'];
-                $precioConIgv = (float)$sel['precio_unit'];
-                $valorUnit    = round($precioConIgv / (1 + $igvRate), 6);
-                $subtotal     = round($valorUnit * $cantidad, 2);
-                $igvItem      = round($subtotal * $igvRate, 2);
-                $totalItem    = round($precioConIgv * $cantidad, 2);
+                $precioConIgv = (float)$sel['precio_unit'];            // <-- CON IGV
+                $valorUnit    = round($precioConIgv / (1 + $igvRate), 6); // sin IGV para SUNAT
+                $subtotal     = round($valorUnit * $cantidad, 2);         // base línea
+                $igvItem      = round($subtotal * $igvRate, 2);           // igv línea
+                $totalItem    = round($precioConIgv * $cantidad, 2);      // con IGV
 
                 $invoiceItem = InvoiceItem::create([
                     'invoice_id'      => $inv->id,
@@ -221,7 +215,7 @@ class GenerateInvoiceService
                     'subtotal'        => $subtotal,
                     'igv'             => $igvItem,
                     'total'           => $totalItem,
-                    'afectacion'      => '10',
+                    'afectacion'      => '10', // gravado - onerosa
                 ]);
 
                 ComandaItemLiquidacion::create([
@@ -232,22 +226,83 @@ class GenerateInvoiceService
                     'monto'           => (float)$totalItem,
                 ]);
 
-                $op_gravada += $subtotal;
-                $igv        += $igvItem;
-                $total      += $totalItem;
+                // Acumular brutos
+                $sumBase  += $subtotal;
+                $sumIgv   += $igvItem;
+                $sumTotal += $totalItem; // con IGV
             }
 
+            // -------------------------
+            // Descuento global (con IGV)
+            // -------------------------
+            // $billingData['descuento'] puede venir como ['tipo'=>'porc'|'fijo','valor'=>float]
+            $descuento = 0.0;
+            if (!empty($billingData['descuento']) && is_array($billingData['descuento'])) {
+                $tipoDesc = $billingData['descuento']['tipo'] ?? '';
+                $valDesc  = (float)($billingData['descuento']['valor'] ?? 0);
+                if ($tipoDesc === 'porc') {
+                    $descuento = $sumTotal * ($valDesc / 100.0); // sobre total con IGV
+                } elseif ($tipoDesc === 'fijo') {
+                    $descuento = $valDesc;
+                }
+                if ($descuento < 0) $descuento = 0;
+                if ($descuento > $sumTotal) $descuento = $sumTotal;
+            }
+
+            // Prorrateo del descuento entre base e IGV (por tasa)
+            $descBase = round($descuento / (1 + $igvRate), 2);
+            $descIgv  = round($descuento - $descBase, 2);
+
+            // -------------------------
+            // Propina (no gravada)
+            // -------------------------
+            // Se calcula sobre el consumo neto (total con IGV - descuento)
+            $consumoNeto = $sumTotal - $descuento; // sigue incluyendo IGV
+            if ($consumoNeto < 0) $consumoNeto = 0;
+
+            $propina = 0.0;
+            if (!empty($billingData['propina']) && is_array($billingData['propina'])) {
+                $tipoProp = $billingData['propina']['tipo'] ?? '';
+                $valProp  = (float)($billingData['propina']['valor'] ?? 0);
+                if ($tipoProp === 'porc') {
+                    $propina = $consumoNeto * ($valProp / 100.0);
+                } elseif ($tipoProp === 'fijo') {
+                    $propina = $valProp;
+                }
+                if ($propina < 0) $propina = 0;
+            }
+
+            // -------------------------
             // Totales cabecera
+            // -------------------------
+            $op_gravada   = max(0, round($sumBase - $descBase, 2));
+            $igv          = max(0, round($sumIgv  - $descIgv,  2));
+            $op_exonerada = 0.00; // si en futuro hay exoneradas, sumar aquí
+            $op_inafecta  = round($propina, 2); // propina no gravada (visible y sumable)
+
+            // total final a pagar = (base neta + igv neto + exonerada) + propina
+            $total = round(($op_gravada + $igv + $op_exonerada) + $op_inafecta, 2);
+
             $inv->update([
-                'op_gravada'   => round($op_gravada, 2),
-                'op_exonerada' => round($op_exonerada, 2),
-                'op_inafecta'  => round($op_inafecta, 2),
-                'descuento'    => round($descuento, 2),
-                'igv'          => round($igv, 2),
-                'total'        => round($total - $descuento, 2),
+                'op_gravada'   => $op_gravada,
+                'op_exonerada' => $op_exonerada,
+                'op_inafecta'  => $op_inafecta,
+                'descuento'    => round($descuento, 2), // Monto total de dto (incluye IGV)
+                'igv'          => $igv,
+                'total'        => $total,
+                'extra'        => array_merge($inv->extra ?? [], [
+                    'sumBase_bruto'   => round($sumBase, 2),
+                    'sumIgv_bruto'    => round($sumIgv, 2),
+                    'sumTotal_bruto'  => round($sumTotal, 2),
+                    'descBase'        => $descBase,
+                    'descIgv'         => $descIgv,
+                    'consumo_neto'    => round($consumoNeto, 2),
+                ]),
             ]);
 
+            // -------------------------
             // Pagos
+            // -------------------------
             if (!empty($paymentData)) {
                 foreach ($paymentData as $p) {
                     Payment::create([
@@ -266,7 +321,9 @@ class GenerateInvoiceService
                 }
             }
 
-            // Cerrar atención si no quedan pendientes
+            // -------------------------
+            // Cierre de atención
+            // -------------------------
             $existenPendientes = ComandaItem::whereHas('comanda', function ($q) use ($atencion) {
                 $q->where('atencion_id', $atencion->id);
             })
@@ -275,10 +332,13 @@ class GenerateInvoiceService
 
             if (!$existenPendientes) {
                 $atencion->update(['estado' => 'cerrada']);
-                if ($atencion->mesa_id) $atencion->mesa()->update(['estado' => 'libre']);
+                if ($atencion->mesa_id) {
+                    $atencion->mesa()->update(['estado' => 'libre']);
+                }
             }
 
             return $inv;
         });
     }
+
 }

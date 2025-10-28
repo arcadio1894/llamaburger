@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Atencion;
 use App\Models\Comanda;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -133,5 +134,65 @@ class PedidoExternoController extends Controller
 
         // Redirige a la vista de pagos (la misma que usaremos para mesas)
         return redirect()->route('pagos.create', $atencion);
+    }
+
+    public function verDetalles(Atencion $atencion)
+    {
+        // Obtenemos la factura asociada (boleta o factura)
+        $invoice = Invoice::where('atencion_id', $atencion->id)->first(); // relación 1:1 definida en Atencion (si no existe, podemos crearla abajo)
+        // si no tienes esa relación aún, puedes usar:
+        // $invoice = \App\Models\Invoice::where('atencion_id', $atencion->id)->first();
+
+        // Asumiendo relación 1–1: una sola comanda “externa”
+        $comanda = $atencion->comandas()->with('items')->first(); // ->items = comanda_items
+
+        if (!$comanda) {
+            return response()->json(['ok' => false, 'message' => 'No se encontró la comanda.'], 404);
+        }
+
+        // Datos del cliente desde el invoice (único por atencion)
+        $cliente = [
+            'nombre'    => $invoice ? $invoice->cliente_nombre : null,
+            'documento' => $invoice ? $invoice->cliente_doc_num : null,
+            'tipo_doc'  => $invoice ? $invoice->cliente_doc_tipo : null,
+            'direccion' => $invoice ? $invoice->cliente_direccion : null,
+        ];
+
+        return response()->json([
+            'ok' => true,
+            'atencion' => [
+                'id'         => $atencion->id,
+                'created_at' => $atencion->created_at ? $atencion->created_at->toDateTimeString() : null,
+            ],
+
+            // Información del cliente (desde invoice)
+            'cliente' => $cliente,
+            'comanda' => [
+                'id'                  => $comanda->id,
+                'numero'              => $comanda->numero,
+                'mesa'                => optional($comanda->atencion->mesa)->nombre,
+                'mozo'                => optional($comanda->atencion->mozo)->nombre,
+                'estado'              => $comanda->estado,
+                'subtotal'            => $comanda->subtotal,
+                'descuento'           => $comanda->descuento,
+                'igv'                 => $comanda->igv,
+                'total'               => $comanda->total,
+                'sent_to_kitchen_at'  => optional($comanda->sent_to_kitchen_at)->toDateTimeString(),
+                'started_cooking_at'  => optional($comanda->started_cooking_at)->toDateTimeString(),
+                'ready_at'            => optional($comanda->ready_at)->toDateTimeString(),
+                // si prefieres, puedes incluir items aquí:
+                // 'comanda_items'    => $comanda->items,
+            ],
+            // o devolverlos aparte:
+            'items'   => $comanda->items->map(function($it){
+                return [
+                    'nombre'   => $it->nombre,
+                    'cantidad' => $it->cantidad,
+                    'precio'   => $it->precio,
+                    'total'    => $it->total,
+                    'notas'    => $it->observacion,
+                ];
+            }),
+        ]);
     }
 }
