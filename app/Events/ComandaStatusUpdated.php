@@ -47,7 +47,7 @@ class ComandaStatusUpdated implements ShouldBroadcast
                 'mozo'   => optional($this->comanda->atencion->mozo)->nombre,
                 'total' => $this->comanda->total,
                 'estimated_minutes' => $this->comanda->estimated_minutes,
-                'estimated_ready_at' => optional($this->comanda->estimated_ready_at)->toDateTimeString(),
+                'estimated_ready_at' => $this->comanda->estimated_ready_at,
             ]
         ];
     }

@@ -96,6 +96,8 @@ class ComandaController extends Controller
                 'total'       => (float)$c->total,
                 'items'       => (int)($c->items()->count()),
                 'status'      => $this->mapComandaToKanban($c->estado), // created/processing/shipped
+                'estimated_ready_at' => $c->estimated_ready_at,
+                'estimated_minutes' => $c->estimated_minutes,
             ];
         })->values();
 

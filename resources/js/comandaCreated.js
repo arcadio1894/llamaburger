@@ -158,11 +158,16 @@ function getComandaCardByStatus(t){
 function getComandaCardProcessing(t){
     // calcula textos ETA si están
     let etaTxt = '';
+    console.log(t.estimated_ready_at);
     if (t.estimated_ready_at) {
         const d = new Date(t.estimated_ready_at);
+        console.log(d);
         const time = d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+        console.log(time);
         const date = d.toLocaleDateString('es-PE', {year:'numeric', month:'short', day:'2-digit'});
-        etaTxt = `<div class="mt-1"><small><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+        console.log(date);
+        etaTxt = `<div class="mt-1"><small style="color: black !important;"><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+        console.log(etaTxt);
     }
 
     return `
@@ -174,7 +179,7 @@ function getComandaCardProcessing(t){
       </h5>
       ${etaTxt}
     </div>
-    <div class="card-footer" style="padding:8px;">
+    <div class="card-footer" style="padding:8px;margin-top: 5px">
       ${comandaFooterLeft(t)}
     </div>
   </div>`;

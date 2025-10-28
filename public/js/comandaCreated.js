@@ -122,23 +122,28 @@ function getComandaCardByStatus(t) {
 function getComandaCardProcessing(t) {
   // calcula textos ETA si están
   var etaTxt = '';
+  console.log(t.estimated_ready_at);
   if (t.estimated_ready_at) {
     var d = new Date(t.estimated_ready_at);
+    console.log(d);
     var time = d.toLocaleTimeString('es-PE', {
       hour: '2-digit',
       minute: '2-digit'
     });
+    console.log(time);
     var date = d.toLocaleDateString('es-PE', {
       year: 'numeric',
       month: 'short',
       day: '2-digit'
     });
-    etaTxt = "<div class=\"mt-1\"><small><b>ETA:</b> ".concat(date, " ").concat(time, " (").concat(t.estimated_minutes || '-', " min)</small></div>");
+    console.log(date);
+    etaTxt = "<div class=\"mt-1\"><small style=\"color: black !important;\"><b>ETA:</b> ".concat(date, " ").concat(time, " (").concat(t.estimated_minutes || '-', " min)</small></div>");
+    console.log(etaTxt);
   }
-  return "\n  <div class=\"card card-widget widget-user\" style=\"margin:5px;padding:5px;width:100%;min-height:120px;\">\n    <div class=\"widget-user-header bg-gradient-success\" style=\"padding:8px;\">\n      <span class=\"widget-user-desc\" style=\"font-size:14px\">Comanda #".concat(t.numero, "</span>\n      <h5 class=\"widget-user-username\" style=\"font-size:.9rem;padding-top:3px\">\n        Mesa ").concat(t.mesa || '-', " <br> Mozo: ").concat(t.mozo || '-', "\n      </h5>\n      ").concat(etaTxt, "\n    </div>\n    <div class=\"card-footer\" style=\"padding:8px;\">\n      ").concat(comandaFooterLeft(t), "\n    </div>\n  </div>");
+  return "\n  <div class=\"card card-widget widget-user\" style=\"margin:5px;padding:5px;width:100%;min-height:120px;\">\n    <div class=\"widget-user-header bg-gradient-success\" style=\"padding:8px;\">\n      <span class=\"widget-user-desc\" style=\"font-size:14px\">Comanda #".concat(t.numero, "</span>\n      <h5 class=\"widget-user-username\" style=\"font-size:.9rem;padding-top:3px\">\n        Mesa ").concat(t.mesa || '-', " <br> Mozo: ").concat(t.mozo || '-', "\n      </h5>\n      ").concat(etaTxt, "\n    </div>\n    <div class=\"card-footer\" style=\"padding:8px;margin-top: 5px\">\n      ").concat(comandaFooterLeft(t), "\n    </div>\n  </div>");
 }
 function getComandaCardShipped(t) {
-  return "\n    <div class=\"card card-widget widget-user\" style=\"margin:5px;padding:5px;width:100%;min-height:120px;\">\n      <div class=\"widget-user-header bg-gradient-info\" style=\"padding:8px;\">\n        <span class=\"widget-user-desc\" style=\"font-size:14px\">Comanda #".concat(t.numero, "</span>\n        <h5 class=\"widget-user-username\" style=\"font-size:.9rem;padding-top:3px\">\n          Mesa ").concat(t.mesa || '-', " <br> Mozo: ").concat(t.mozo || '-', "\n        </h5>\n      </div>\n      <div class=\"card-footer\" style=\"padding:8px;\">\n        <div class=\"row\">\n          <div class=\"col-sm-8\">\n            ").concat(comandaFooterLeft(t), "\n          </div>\n          <div class=\"col-sm-4\">\n            <a href=\"#\" class=\"btn btn-success btn-block\" data-comanda-entregar=\"").concat(t.id || t.comanda_id, "\">\n              <strong>ENTREGAR</strong>\n            </a>\n          </div>\n        </div>\n      </div>\n    </div>");
+  return "\n    <div class=\"card card-widget widget-user\" style=\"margin:5px;padding:5px;width:100%;min-height:120px;\">\n      <div class=\"widget-user-header bg-gradient-info\" style=\"padding:8px;\">\n        <span class=\"widget-user-desc\" style=\"font-size:14px\">Comanda #".concat(t.numero, "</span>\n        <h5 class=\"widget-user-username\" style=\"font-size:.9rem;padding-top:3px\">\n          Mesa ").concat(t.mesa || '-', " <br> Mozo: ").concat(t.mozo || '-', "\n        </h5>\n      </div>\n      <div class=\"card-footer\" style=\"padding:8px;\">\n        <div class=\"row\">\n          <div class=\"col-sm-12\">\n            ").concat(comandaFooterLeft(t), "\n          </div>\n          <div class=\"col-sm-12\">\n            <a href=\"#\" class=\"btn btn-sm btn-success btn-block\" data-comanda-entregar=\"").concat(t.id || t.comanda_id, "\">\n              <strong>ENTREGAR</strong>\n            </a>\n          </div>\n        </div>\n      </div>\n    </div>");
 }
 /******/ })()
 ;
