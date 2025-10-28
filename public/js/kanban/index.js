@@ -502,6 +502,8 @@ $(document).ready(function () {
             $.alert("❌ No se pudo obtener la información del pedido.");
         });
     });
+
+    startEtaTicker();
 });
 
 function handleOrderMove(id, oldStatus, newStatus, itemDomId){
@@ -1189,22 +1191,29 @@ function getComandaCardProcessing(t){
         const d = new Date(t.estimated_ready_at);
         const time = d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
         const date = d.toLocaleDateString('es-PE', {year:'numeric', month:'short', day:'2-digit'});
-        etaTxt = `<div class="mt-1"><small style="color: black !important;"><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+        etaTxt = `<b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)`;
     }
 
     return `
-  <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
-    <div class="widget-user-header bg-gradient-success" style="padding:8px;">
-      <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
-      <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
-        Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
-      </h5>
-      ${etaTxt}
+  <div class="card card-widget widget-user pedido-card"
+     data-id="${t.id}"
+     data-deadline="${t.estimated_ready_at || ''}"
+     data-total-min="${t.estimated_minutes || 60}"
+     data-estado="${t.estado}"
+     style="margin:5px;padding:5px;width:100%;min-height:120px;">
+  <div class="widget-user-header bg-gradient-success eta-header" style="padding:8px; transition:background-color .3s ease;">
+    <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+    <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+      Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+    </h5>
+    <div class="mt-1">
+      <small class="eta-line" style="color:black!important;">${etaTxt}</small>
     </div>
-    <div class="card-footer" style="padding:8px; margin-top: 5px">
-      ${comandaFooterLeft(t)}
-    </div>
-  </div>`;
+  </div>
+  <div class="card-footer" style="padding:8px;margin-top:22px">
+    ${comandaFooterLeft(t)}
+  </div>
+</div>`;
 }
 
 function getComandaCardShipped(t){
@@ -1258,4 +1267,84 @@ function parseEntity(itemIdOld){
     if (itemId.indexOf('comanda_') === 0) return { type:'comanda', id: itemId.replace('comanda_','') };
     // fallback: intenta detectar por prefijos viejos
     return { type: 'order', id: itemId.replace('kanban_','') };
+}
+
+// Util: formatea "faltan Xm Ys" o "atrasado Xm"
+function fmtRemaining(ms){
+    const sign = ms < 0 ? -1 : 1;
+    ms = Math.abs(ms);
+    const m = Math.floor(ms/60000);
+    const s = Math.floor((ms%60000)/1000);
+    return sign < 0 ? `atrasado ${m}m ${s}s` : `faltan ${m}m ${s}s`;
+}
+
+// Pinta el header según progreso: <90% verde, 90–100% naranja, >100% rojo
+function paintEtaState(card, nowMs){
+    const header = card.querySelector('.eta-header');
+    const line   = card.querySelector('.eta-line');
+
+    const estado = card.dataset.estado; // 'cocinando', 'lista', etc.
+    const deadlineStr = card.dataset.deadline;
+    const totalMin = parseFloat(card.dataset.totalMin || '60');
+
+    if (!deadlineStr || !totalMin || estado === 'lista') {
+        // No ETA o ya lista: mantener verde y mostrar nada
+        header.classList.remove('bg-gradient-warning','bg-gradient-danger');
+        header.classList.add('bg-gradient-success');
+        if (line) line.textContent = '';
+        return;
+    }
+
+    const deadline = new Date(deadlineStr).getTime();
+    const totalMs  = totalMin * 60 * 1000;
+    const warnAt   = deadline - totalMs * 0.10; // 90% del tiempo
+
+    // Estado por tiempo
+    header.classList.remove('bg-gradient-success','bg-gradient-warning','bg-gradient-danger');
+    if (nowMs >= deadline) {
+        header.classList.add('bg-gradient-danger');
+    } else if (nowMs >= warnAt) {
+        header.classList.add('bg-gradient-warning');
+    } else {
+        header.classList.add('bg-gradient-success');
+    }
+
+    // Línea ETA (fecha, hora y cuenta regresiva)
+    const d = new Date(deadline);
+    const hhmm = d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    const ymd  = d.toLocaleDateString('es-PE',{year:'numeric',month:'short',day:'2-digit'});
+    const remain = deadline - nowMs;
+    if (line) line.innerHTML = `<b>ETA:</b> ${ymd} ${hhmm} (${totalMin} min) <br> — ${fmtRemaining(remain)}`;
+}
+
+// Ticker liviano sin llamadas al servidor
+let etaTimer = null;
+function startEtaTicker(){
+    if (etaTimer) return;
+    const tick = () => {
+        const now = Date.now();
+        document.querySelectorAll('.pedido-card').forEach(card => paintEtaState(card, now));
+    };
+    tick(); // primer pintado inmediato
+    etaTimer = setInterval(tick, 5000); // cada 15s; puedes subir/bajar
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && etaTimer) { clearInterval(etaTimer); etaTimer = null; }
+        else if (!document.hidden) { startEtaTicker(); }
+    });
+}
+
+
+// Si usas Pusher, cuando llegue un evento de actualización (estado o ETA):
+// 1) actualiza data-attributes y el HTML del card
+// 2) llama a paintEtaState(card, Date.now()) para repintar de inmediato
+//
+// Ejemplo rápido cuando cambie una comanda:
+function onComandaUpdate(t){
+    const card = document.querySelector(`.pedido-card[data-id="${t.id}"]`);
+    if (!card) return;
+    card.dataset.deadline  = t.estimated_ready_at || '';
+    card.dataset.totalMin  = t.estimated_minutes || 60;
+    card.dataset.estado    = t.estado;
+    // actualiza texto base si quieres (mesa/mozo/etc.)
+    paintEtaState(card, Date.now());
 }

@@ -166,23 +166,31 @@ function getComandaCardProcessing(t){
         console.log(time);
         const date = d.toLocaleDateString('es-PE', {year:'numeric', month:'short', day:'2-digit'});
         console.log(date);
-        etaTxt = `<div class="mt-1"><small style="color: black !important;"><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+        //etaTxt = `<div class="mt-1"><small style="color: black !important;"><b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)</small></div>`;
+        etaTxt = `<b>ETA:</b> ${date} ${time} (${t.estimated_minutes||'-'} min)`;
         console.log(etaTxt);
     }
 
     return `
-  <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
-    <div class="widget-user-header bg-gradient-success" style="padding:8px;">
-      <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
-      <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
-        Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
-      </h5>
-      ${etaTxt}
+  <div class="card card-widget widget-user pedido-card"
+     data-id="${t.id}"
+     data-deadline="${t.estimated_ready_at || ''}"
+     data-total-min="${t.estimated_minutes || 60}"
+     data-estado="${t.estado}"
+     style="margin:5px;padding:5px;width:100%;min-height:120px;">
+  <div class="widget-user-header bg-gradient-success eta-header" style="padding:8px; transition:background-color .3s ease;">
+    <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
+    <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
+      Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
+    </h5>
+    <div class="mt-1">
+      <small class="eta-line" style="color:black!important;">${etaTxt}</small>
     </div>
-    <div class="card-footer" style="padding:8px;margin-top: 5px">
-      ${comandaFooterLeft(t)}
-    </div>
-  </div>`;
+  </div>
+  <div class="card-footer" style="padding:8px;margin-top:22px">
+    ${comandaFooterLeft(t)}
+  </div>
+</div>`;
 }
 
 function getComandaCardShipped(t){
