@@ -770,6 +770,8 @@ Route::post('/dashboard/print', [PrintController::class, 'imprimir']);
 Route::get('/imprimir/recibo/{id}', [PrintController::class, 'generarRecibo']);
 Route::get('/imprimir/comanda/{id}', [PrintController::class, 'generarComanda']);
 
+Route::get('/imprimir/comanda-mesa/{id}', [PrintController::class, 'generarComandaMesa']);
+
 Route::get('/products/initialize-days', [ProductController::class, 'initializeProductDays']);
 
 Route::get('/reporte/cantidad-pizzas', [OrderController::class, 'reportePizzasFinde']);

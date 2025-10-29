@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comanda;
 use App\Models\Order;
 use App\Models\UserCoupon;
 use Illuminate\Http\Request;
@@ -268,5 +269,23 @@ class PrintController extends Controller
             ->setPaper([0, 0, 226.8, 900], 'portrait'); // 80mm de ancho, altura dinámica
 
         return $pdf->stream("recibo_{$order->id}.pdf");
+    }
+
+    public function generarComandaMesa($id)
+    {
+        $comanda = Comanda::find($id);
+
+        if (!$comanda) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Boleta no encontrada'
+            ], 420);
+        }
+
+        $pdf = Pdf::loadView('comanda.comanda', [
+            'comanda' => $comanda
+        ])->setPaper([0, 0, 226.8, 900], 'portrait'); // 80mm de ancho, altura dinámica
+
+        return $pdf->stream("comanda_{$comanda->id}.pdf");
     }
 }

@@ -40,7 +40,21 @@ class OrderController extends Controller
 
     public function indexKanban()
     {
-        return view('kanban.index');
+        $warn = optional(DataGeneral::where('name','kanban_warn_threshold')->first())->valueNumber ?? 0.90;
+        $danger = optional(DataGeneral::where('name','kanban_danger_threshold')->first())->valueNumber ?? 1.00;
+
+        // Sanea límites
+        $warn = max(0, min(1, (float)$warn));
+        $danger = max(0, min(1, (float)$danger));
+
+        // Evita invertir el orden
+        if ($warn > $danger) {
+            $tmp = $warn;
+            $warn = $danger;
+            $danger = $tmp;
+        }
+
+        return view('kanban.index', compact('warn','danger'));
     }
 
     public function getOrders()

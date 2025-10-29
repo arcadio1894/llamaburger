@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ComandaCreated;
 use App\Models\Atencion;
+use App\Models\Comanda;
 use App\Models\Invoice;
 use App\Services\Billing\GenerateInvoiceService;
 use Illuminate\Http\Request;
@@ -105,6 +107,27 @@ class BillingController extends Controller
                 'comprobante_url'  => route('invoices.show', $invoice),
                 'pdf_url'          => null,
             ]);
+        }
+
+        // Enviar a cocina si es externo
+        if ( $atencion->tipo == 'externo' )
+        {
+            // Obtenemos la comanda
+            $comanda = Comanda::where('atencion_id', $atencion->id)->first();
+            if (in_array($comanda->estado, ['enviada','cocinando','servida'])) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'Esta comanda ya fue enviada a cocina.'
+                ]);
+            }
+
+            // marca interna opcional
+            $comanda->update([
+                'estado' => 'enviada',            // si usas un campo; si no, omite
+                'sent_to_kitchen_at' => now(),    // si lo tienes; si no, omite
+            ]);
+
+            broadcast(new ComandaCreated($comanda));
         }
 
         // 6) Boleta/Factura: emitir a Nubefact y devolver enlace PDF

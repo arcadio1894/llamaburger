@@ -112,7 +112,12 @@
     <script src="{{ asset('admin/plugins/jqxwidgets/js/jqxsortable.js') }}"></script>
     <script src="{{ asset('admin/plugins/jqxwidgets/js/jqxkanban.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js"></script>
-
+    <script>
+        window.KANBAN_THRESHOLDS = {
+            warn: {{ $warn }},
+            danger: {{ $danger }}
+        };
+    </script>
 @endsection
 
 @section('scripts')

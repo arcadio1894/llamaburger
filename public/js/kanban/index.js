@@ -504,6 +504,73 @@ $(document).ready(function () {
     });
 
     startEtaTicker();
+
+    $(document).on("click", "[data-comanda-entregar]", function (event) {
+        event.preventDefault();
+
+        const $btn = $(this);
+        let rawId = $btn.data("comanda-entregar");
+
+        // 🔹 Si el valor viene como "comanda_5", lo limpiamos
+        let comandaId = rawId.toString().replace(/comanda_/i, "");
+
+        $.confirm({
+            title: "📦 Confirmar Entrega",
+            content: "¿Estás seguro de que este pedido ha sido entregado?",
+            buttons: {
+                aceptar: {
+                    text: "Sí, Entregado",
+                    btnClass: "btn-green",
+                    action: function () {
+                        $.blockUI({
+                            message: '<h3>⏳ Procesando solicitud...</h3>',
+                            css: {
+                                border: 'none',
+                                padding: '15px',
+                                backgroundColor: '#000',
+                                borderRadius: '10px',
+                                opacity: 0.5,
+                                color: '#fff'
+                            }
+                        });
+
+                        $.ajax({
+                            url: `/api/kitchen/comandas/${comandaId}/deliver`,
+                            type: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+                            },
+                            success: function (res) {
+                                $.unblockUI();
+                                if (res.ok) {
+                                    $.alert("✅ Pedido entregado correctamente.");
+
+                                    // 🔥 Dispara un evento local (para quitar el card)
+                                    $(document).trigger("comanda:entregada", [comandaId]);
+                                } else {
+                                    $.alert("⚠️ No se pudo actualizar el estado del pedido.");
+                                }
+                            },
+                            error: function (xhr) {
+                                $.unblockUI();
+                                console.error("❌ Error al entregar:", xhr);
+                                $.alert("⚠️ Error al entregar el pedido.");
+                            }
+                        });
+                    }
+                },
+                cancelar: { text: "Cancelar" }
+            }
+        });
+    });
+
+    $(document).on("comanda:entregada", function (e, comandaId) {
+        // Buscar tanto comanda_5 como 5 por seguridad
+        const $card = $(`[data-comanda-entregar='${comandaId}'], [data-comanda-entregar='comanda_${comandaId}']`).closest(".card");
+        if ($card.length) {
+            $card.fadeOut(400, function () { $(this).remove(); });
+        }
+    });
 });
 
 function handleOrderMove(id, oldStatus, newStatus, itemDomId){
@@ -1278,8 +1345,8 @@ function fmtRemaining(ms){
     return sign < 0 ? `atrasado ${m}m ${s}s` : `faltan ${m}m ${s}s`;
 }
 
-// Pinta el header según progreso: <90% verde, 90–100% naranja, >100% rojo
-function paintEtaState(card, nowMs){
+// Pinta el header según progreso: <90% verde, 70–90% naranja, >100% rojo
+function paintEtaState(card, nowMs) {
     const header = card.querySelector('.eta-header');
     const line   = card.querySelector('.eta-line');
 
@@ -1288,20 +1355,27 @@ function paintEtaState(card, nowMs){
     const totalMin = parseFloat(card.dataset.totalMin || '60');
 
     if (!deadlineStr || !totalMin || estado === 'lista') {
-        // No ETA o ya lista: mantener verde y mostrar nada
         header.classList.remove('bg-gradient-warning','bg-gradient-danger');
         header.classList.add('bg-gradient-success');
         if (line) line.textContent = '';
         return;
     }
 
+    // 🧩 Tomamos los porcentajes desde la variable global
+    const thresholds = window.KANBAN_THRESHOLDS || { warn: 0.90, danger: 1.00 };
+    const warnPct = parseFloat(thresholds.warn ?? 0.90);
+    const dangerPct = parseFloat(thresholds.danger ?? 1.00);
+
     const deadline = new Date(deadlineStr).getTime();
     const totalMs  = totalMin * 60 * 1000;
-    const warnAt   = deadline - totalMs * 0.10; // 90% del tiempo
 
-    // Estado por tiempo
+    // Calcular el momento en que cambia cada color
+    const warnAt   = deadline - totalMs * (1 - warnPct);
+    const dangerAt = deadline - totalMs * (1 - dangerPct);
+
+    // 🔥 Cambios de color dinámicos
     header.classList.remove('bg-gradient-success','bg-gradient-warning','bg-gradient-danger');
-    if (nowMs >= deadline) {
+    if (nowMs >= dangerAt) {
         header.classList.add('bg-gradient-danger');
     } else if (nowMs >= warnAt) {
         header.classList.add('bg-gradient-warning');
@@ -1309,12 +1383,12 @@ function paintEtaState(card, nowMs){
         header.classList.add('bg-gradient-success');
     }
 
-    // Línea ETA (fecha, hora y cuenta regresiva)
+    // 🕓 Texto ETA y tiempo restante
     const d = new Date(deadline);
     const hhmm = d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
     const ymd  = d.toLocaleDateString('es-PE',{year:'numeric',month:'short',day:'2-digit'});
     const remain = deadline - nowMs;
-    if (line) line.innerHTML = `<b>ETA:</b> ${ymd} ${hhmm} (${totalMin} min) <br> — ${fmtRemaining(remain)}`;
+    if (line) line.innerHTML = `<b>ETA:</b> ${ymd} ${hhmm} (${totalMin} min)<br>— ${fmtRemaining(remain)}`;
 }
 
 // Ticker liviano sin llamadas al servidor
