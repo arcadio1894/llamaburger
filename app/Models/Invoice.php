@@ -10,10 +10,28 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
-        'atencion_id','customer_id','tipo','serie','numero',
-        'cliente_nombre','cliente_doc_tipo','cliente_doc_num','cliente_direccion',
-        'op_gravada','igv','op_exonerada','op_inafecta','descuento','total','moneda',
-        'estado','issue_date','extra'
+        'atencion_id',
+        'customer_id',
+        'tipo',
+        'serie',
+        'numero',
+        'cliente_nombre',
+        'cliente_doc_tipo',
+        'cliente_doc_num',
+        'cliente_direccion',
+        'op_gravada',
+        'igv',
+        'op_exonerada',
+        'op_inafecta',
+        'descuento',
+        'total',
+        'moneda',
+        'estado',
+        'issue_date',
+        'extra',
+        'payment_method_id',
+        'payment_amount',
+        'payment_code'
     ];
 
     protected $casts = [
@@ -35,5 +53,33 @@ class Invoice extends Model
 
     public function payments(){
         return $this->hasMany(Payment::class);
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
+    }
+
+    public function getDisplayPagoAttribute()
+    {
+        $payment = $this->payments->first();
+
+        if (!$payment) {
+            return '-';
+        }
+
+        switch ($payment->metodo) {
+            case 'efectivo':
+            case 'pos':
+                return $this->payment_amount
+                    ? 'S/ ' . number_format($this->payment_amount, 2)
+                    : '-';
+
+            case 'yape_plin':
+                return $payment->referencia ?: '-';
+
+            default:
+                return '-';
+        }
     }
 }

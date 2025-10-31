@@ -467,6 +467,15 @@
                                 </a>
                             </li>
                             @endcan
+
+                            {{--@can('pedidos.anulados')--}}
+                                <li class="nav-item">
+                                    <a href="{{route('invoices.index')}}" class="nav-link @yield('activeListInvoices')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Comprobantes Mesa</p>
+                                    </a>
+                                </li>
+                            {{--@endcan--}}
                         </ul>
                     </li>
                     @endcan

@@ -14,6 +14,7 @@ use App\Models\ComandaItemLiquidacion;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -171,6 +172,46 @@ class GenerateInvoiceService
 
             $clienteDireccion = isset($billingData['cliente_direccion']) ? $billingData['cliente_direccion'] : ($customer ? $customer->direccion : null);
 
+
+            // 1) tomar el primer pago (en tu flujo solo mandas uno)
+            $firstPago = is_array($paymentData) && count($paymentData) > 0 ? $paymentData[0] : null;
+
+            // valores por defecto
+            $paymentMethodId = null;
+            $paymentAmount   = null;
+            $paymentCode     = null;
+
+            if ($firstPago) {
+                $metodo   = $firstPago['metodo'] ?? null;           // 'efectivo', 'yape_plin', 'pos'
+                $monto    = $firstPago['monto'] ?? null;            // total cobrado
+                $recibido = $firstPago['monto_recibido'] ?? null;   // solo para efectivo
+                $ref      = $firstPago['referencia'] ?? null;       // yape / plin / pos
+
+                // 2) buscar payment_method por code
+                // en tu tabla payment_methods tienes: name, code, ...
+                if ($metodo) {
+                    $pm = PaymentMethod::where('code', $metodo)->first();
+                    if ($pm) {
+                        $paymentMethodId = $pm->id;
+                    }
+                }
+
+                // 3) payment_amount
+                // - si es efectivo: guardar lo que RECIBIÓ (monto_recibido) porque ahí ves si recibió más y hubo vuelto
+                // - si es yape / plin / pos: guardar lo que se cobró (monto)
+                if ($metodo === 'efectivo') {
+                    $paymentAmount = $recibido ?: $monto; // fallback al monto si por alguna razón no vino monto_recibido
+                } else {
+                    $paymentAmount = $monto;
+                }
+
+                // 4) payment_code
+                // - si es yape_plin o pos: guarda la referencia
+                if (in_array($metodo, ['yape_plin', 'pos'])) {
+                    $paymentCode = $ref;
+                }
+            }
+
             // Crear cabecera preliminar (totales se actualizan luego)
             $inv = new Invoice();
             $inv->fill([
@@ -183,6 +224,9 @@ class GenerateInvoiceService
                 'cliente_doc_tipo'  => $clienteDocTipo,
                 'cliente_doc_num'   => $clienteDocNum,
                 'cliente_direccion' => $clienteDireccion,
+                'payment_method_id' => $paymentMethodId,
+                'payment_amount'    => $paymentAmount,
+                'payment_code'      => $paymentCode,
                 'moneda'            => 'PEN',
                 'estado'            => 'emitido',
                 'issue_date'        => now(),

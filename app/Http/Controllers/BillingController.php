@@ -15,6 +15,8 @@ class BillingController extends Controller
 {
     public function facturar(Request $req, Atencion $atencion, GenerateInvoiceService $svc)
     {
+        /*dump($req);
+        dd();*/
         // 1) Validación de entrada (incluye descuento/propina como objetos)
         $data = $req->validate([
             'tipo'              => ['required', Rule::in(['boleta','factura','ticket'])],
@@ -41,7 +43,7 @@ class BillingController extends Controller
 
             // Pagos
             'pagos'                 => ['nullable','array'],
-            'pagos.*.metodo'        => ['required_with:pagos', Rule::in(['efectivo','tarjeta','yape','plin','transferencia','mixto','otro'])],
+            'pagos.*.metodo'        => ['required_with:pagos', Rule::in(['yape_plin','efectivo','pos'])],
             'pagos.*.monto'         => ['required_with:pagos','numeric','min:0.01'],
             'pagos.*.moneda'        => ['nullable','string','size:3'],
             'pagos.*.monto_recibido'=> ['nullable','numeric'],
@@ -66,7 +68,7 @@ class BillingController extends Controller
         // 2) Validación condicional de método de pago (backend)
         if (!empty($data['pagos'])) {
             foreach ($data['pagos'] as $p) {
-                if (in_array($p['metodo'], ['yape','plin']) && empty($p['referencia'])) {
+                if (in_array($p['metodo'], ['yape_plin']) && empty($p['referencia'])) {
                     return response()->json(['ok'=>false,'message'=>'El código de operación es obligatorio para Yape/Plin.'], 422);
                 }
                 if ($p['metodo'] === 'efectivo') {

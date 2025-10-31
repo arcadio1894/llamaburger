@@ -39,6 +39,7 @@ use \App\Http\Controllers\PagoController;
 use \App\Http\Controllers\ClienteController;
 use \App\Http\Controllers\BillingController;
 use \App\Http\Controllers\NubeFactController;
+use \App\Http\Controllers\InvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -625,6 +626,13 @@ Route::middleware('auth')->group(function (){
             /*->middleware('permission:pagos.generar')*/;
 
         Route::get('/invoices/{invoice}', [BillingController::class, 'show'])->name('invoices.show');
+
+        Route::prefix('invoices')->group(function () {
+            Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
+            Route::get('/{invoice}/items', [InvoiceController::class, 'items'])->name('invoices.items'); // popup
+            Route::get('/{invoice}/print', [InvoiceController::class, 'imprimir'])->name('invoices.print'); // abre PDF
+            Route::post('/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');   // anular (stub)
+        });
 
         Route::get('/mesas/{mesa}/acceso', [AtencionController::class, 'checkAcceso'])
             ->name('mesas.checkAcceso'); // vista de gestión

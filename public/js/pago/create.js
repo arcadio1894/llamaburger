@@ -470,7 +470,7 @@ $(document).ready(function() {
         const method = selectedPaymentMethodCode();
         if (method === 'yape_plin') {
             data.pagos.push({
-                metodo: 'yape',
+                metodo: 'yape_plin',
                 monto: total,
                 referencia: ($('#operationCode').val() || '').trim()
             });
@@ -485,7 +485,7 @@ $(document).ready(function() {
             });
         } else if (method === 'pos') {
             data.pagos.push({
-                metodo: 'tarjeta',
+                metodo: 'pos',
                 monto: total,
                 referencia: null
             });
