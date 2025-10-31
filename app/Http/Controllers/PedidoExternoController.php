@@ -138,19 +138,15 @@ class PedidoExternoController extends Controller
 
     public function verDetalles(Atencion $atencion)
     {
-        // Obtenemos la factura asociada (boleta o factura)
-        $invoice = Invoice::where('atencion_id', $atencion->id)->first(); // relación 1:1 definida en Atencion (si no existe, podemos crearla abajo)
-        // si no tienes esa relación aún, puedes usar:
-        // $invoice = \App\Models\Invoice::where('atencion_id', $atencion->id)->first();
+        // 1. Traemos la invoice con items
+        $invoice = Invoice::with('items')
+            ->where('atencion_id', $atencion->id)
+            ->first();
 
-        // Asumiendo relación 1–1: una sola comanda “externa”
-        $comanda = $atencion->comandas()->with('items')->first(); // ->items = comanda_items
+        // 2. Traemos (opcional) la primera comanda por si quieres mostrar mesa/mozo
+        $comanda = $atencion->comandas()->with('items')->first();
 
-        if (!$comanda) {
-            return response()->json(['ok' => false, 'message' => 'No se encontró la comanda.'], 404);
-        }
-
-        // Datos del cliente desde el invoice (único por atencion)
+        // 3. Cliente (desde invoice si existe)
         $cliente = [
             'nombre'    => $invoice ? $invoice->cliente_nombre : null,
             'documento' => $invoice ? $invoice->cliente_doc_num : null,
@@ -158,41 +154,86 @@ class PedidoExternoController extends Controller
             'direccion' => $invoice ? $invoice->cliente_direccion : null,
         ];
 
+        // 4. Items: si hay invoice, usamos invoice_items (cantidad + valor_unitario SIN IGV)
+        if ($invoice) {
+            $items = $invoice->items->map(function ($it) {
+                $cant   = (float) ($it->cantidad ?? 0);
+                $precio = (float) ($it->valor_unitario ?? 0);   // SIN IGV
+                $total  = round($cant * $precio, 2);
+
+                return [
+                    'nombre'   => $it->descripcion ?? $it->nombre ?? '-',
+                    'cantidad' => $cant,
+                    'precio'   => $precio,
+                    'total'    => $total,
+                    'notas'    => $it->observacion ?? null,
+                ];
+            });
+        } else {
+            // fallback a comanda items (lo que tenías antes)
+            $items = $comanda
+                ? $comanda->items->map(function ($it) {
+                    return [
+                        'nombre'   => $it->nombre,
+                        'cantidad' => $it->cantidad,
+                        'precio'   => $it->precio,
+                        'total'    => $it->total,
+                        'notas'    => $it->observacion,
+                    ];
+                })
+                : collect();
+        }
+
+        // 5. Totales al estilo “comprobante”
+        // Si NO hay invoice, devolvemos totales vacíos y el front puede mostrar lo viejo.
+        $totals = null;
+        if ($invoice) {
+            // subtotal = suma de (cantidad * valor_unitario)
+            $subtotal = $items->sum('total');
+
+            $descuento = (float) ($invoice->descuento ?? 0.0);
+
+            // base imponible = subtotal - descuento
+            $baseImponible = max(0, $subtotal - $descuento);
+
+            // IGV: usa el de la invoice si ya vino. Si no, calcúlalo.
+            $igv = round($baseImponible * 0.18, 2);
+
+            // Propina: la estás guardando en op_inafecta
+            $propina = (float) ($invoice->op_inafecta ?? 0.0);
+
+            // total = base + igv + propina
+            $totalPagar = round($baseImponible + $igv + $propina, 2);
+
+            $totals = [
+                'subtotal'        => round($subtotal, 2),
+                'descuento'       => round($descuento, 2),
+                'base_imponible'  => round($baseImponible, 2),
+                'igv'             => round($igv, 2),
+                'propina'         => round($propina, 2),
+                'total'           => $totalPagar,
+            ];
+        }
+
         return response()->json([
             'ok' => true,
             'atencion' => [
                 'id'         => $atencion->id,
                 'created_at' => $atencion->created_at ? $atencion->created_at->toDateTimeString() : null,
             ],
-
-            // Información del cliente (desde invoice)
             'cliente' => $cliente,
-            'comanda' => [
-                'id'                  => $comanda->id,
-                'numero'              => $comanda->numero,
-                'mesa'                => optional($comanda->atencion->mesa)->nombre,
-                'mozo'                => optional($comanda->atencion->mozo)->nombre,
-                'estado'              => $comanda->estado,
-                'subtotal'            => $comanda->subtotal,
-                'descuento'           => $comanda->descuento,
-                'igv'                 => $comanda->igv,
-                'total'               => $comanda->total,
-                'sent_to_kitchen_at'  => optional($comanda->sent_to_kitchen_at)->toDateTimeString(),
-                'started_cooking_at'  => optional($comanda->started_cooking_at)->toDateTimeString(),
-                'ready_at'            => optional($comanda->ready_at)->toDateTimeString(),
-                // si prefieres, puedes incluir items aquí:
-                // 'comanda_items'    => $comanda->items,
-            ],
-            // o devolverlos aparte:
-            'items'   => $comanda->items->map(function($it){
-                return [
-                    'nombre'   => $it->nombre,
-                    'cantidad' => $it->cantidad,
-                    'precio'   => $it->precio,
-                    'total'    => $it->total,
-                    'notas'    => $it->observacion,
-                ];
-            }),
+
+            // Por si tu JS usa todavía datos de comanda (mesa/mozo)
+            'comanda' => $comanda ? [
+                'id'     => $comanda->id,
+                'numero' => $comanda->numero,
+                'mesa'   => optional($comanda->atencion->mesa)->nombre,
+                'mozo'   => optional($comanda->atencion->mozo)->nombre,
+            ] : null,
+
+            // 👇 lo importante
+            'items'  => $items,
+            'totals' => $totals,
         ]);
     }
 }

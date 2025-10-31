@@ -35,7 +35,7 @@ $(document).ready(function () {
 
                     const headerHtml = renderHeader(atencion, comanda, cliente);
                     const itemsHtml  = renderItemsTable(items);
-                    const totalsHtml = renderTotals(comanda);
+                    const totalsHtml = renderTotals(res.totals || res.comanda);
 
                     self.setContent(`
                           <div>
@@ -86,50 +86,81 @@ function renderItemsTable(items) {
     }
 
     const rows = items.map((it, i) => {
-        const cant = Number(it.cantidad || it.qty || 0);
-        const precio = Number(it.precio || it.price || 0);
-        const total = Number(it.total || (cant * precio));
+        const cant   = Number(it.cantidad || it.qty || 0);
+        // prioridad: valor_unitario (invoice_items) -> precio -> price
+        const precio = Number(
+            it.valor_unitario !== undefined ? it.valor_unitario
+                : it.precio  !== undefined       ? it.precio
+                : it.price   !== undefined       ? it.price
+                    : 0
+        );
+        const total = Number(
+            it.total !== undefined ? it.total : (cant * precio)
+        );
         const nombre = it.nombre || it.name || it.producto || '-';
-        const notas = it.notas || it.observacion || it.observaciones || '';
+        const notas  = it.notas || it.observacion || it.observaciones || '';
 
         return `
-      <tr>
-        <td class="text-center">${i + 1}</td>
-        <td>
-          <div>${nombre}</div>
-          ${notas ? `<small class="text-muted">Nota: ${notas}</small>` : ''}
-        </td>
-        <td class="text-center">${cant}</td>
-        <td class="text-right">${formatMoney(precio)}</td>
-        <td class="text-right font-weight-bold">${formatMoney(total)}</td>
-      </tr>
-    `;
+          <tr>
+            <td class="text-center">${i + 1}</td>
+            <td>
+              <div>${nombre}</div>
+              ${notas ? `<small class="text-muted">Nota: ${notas}</small>` : ''}
+            </td>
+            <td class="text-center">${cant}</td>
+            <td class="text-right">${formatMoney(precio)}</td>
+            <td class="text-right font-weight-bold">${formatMoney(total)}</td>
+          </tr>
+        `;
     }).join('');
 
     return `
-    <div class="table-responsive">
-      <table class="table table-sm table-striped mb-0">
-        <thead>
-          <tr>
-            <th style="width:60px" class="text-center">#</th>
-            <th>Ítem</th>
-            <th style="width:90px" class="text-center">Cant.</th>
-            <th style="width:120px" class="text-right">Precio</th>
-            <th style="width:120px" class="text-right">Importe</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>
-  `;
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead>
+            <tr>
+              <th style="width:60px" class="text-center">#</th>
+              <th>Ítem</th>
+              <th style="width:90px" class="text-center">Cant.</th>
+              <th style="width:120px" class="text-right">Precio</th>
+              <th style="width:120px" class="text-right">Importe</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
 }
 
 // Render del resumen de totales
-function renderTotals(comanda) {
-    const subtotal  = comanda?.subtotal ?? comanda?.sub_total ?? 0;
-    const descuento = comanda?.descuento ?? 0;
-    const igv       = comanda?.igv ?? 0;
-    const total     = comanda?.total ?? 0;
+function renderTotals(data) {
+    // si viene de invoice
+    if (data && typeof data === 'object' && 'base_imponible' in data) {
+        const subtotal       = Number(data.subtotal || 0);
+        const descuento      = Number(data.descuento || 0);
+        const baseImponible  = Number(data.base_imponible || 0);
+        const igv            = Number(data.igv || 0);
+        const propina        = Number(data.propina || 0);
+        const total          = Number(data.total || 0);
+
+        return `
+        <div class="mt-3">
+          <div class="d-flex justify-content-between"><span>Subtotal:</span><strong>${formatMoney(subtotal)}</strong></div>
+          <div class="d-flex justify-content-between"><span>Descuento:</span><strong>- ${formatMoney(descuento)}</strong></div>
+          <div class="d-flex justify-content-between"><span>Base imponible:</span><strong>${formatMoney(baseImponible)}</strong></div>
+          <div class="d-flex justify-content-between"><span>IGV (18%):</span><strong>${formatMoney(igv)}</strong></div>
+          <div class="d-flex justify-content-between"><span>Propina:</span><strong>+ ${formatMoney(propina)}</strong></div>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between h5 mb-0"><span>Total a pagar:</span><strong>${formatMoney(total)}</strong></div>
+        </div>
+        `;
+    }
+
+    // fallback: lo que tenías (por si viene de comanda todavía)
+    const subtotal  = data?.subtotal ?? data?.sub_total ?? 0;
+    const descuento = data?.descuento ?? 0;
+    const igv       = data?.igv ?? 0;
+    const total     = data?.total ?? 0;
 
     return `
     <div class="mt-3">
@@ -139,7 +170,7 @@ function renderTotals(comanda) {
       <hr class="my-2">
       <div class="d-flex justify-content-between h5 mb-0"><span>Total:</span><strong>${formatMoney(total)}</strong></div>
     </div>
-  `;
+    `;
 }
 
 // Render de cabecera con datos de atención/comanda
