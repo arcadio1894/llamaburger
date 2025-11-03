@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\OrderCreated;
 use App\Events\OrderStatusAnulled;
 use App\Events\OrderStatusUpdated;
+use App\Events\OrderStatusUpdatedDistributor;
 use App\Mail\OrderStatusEmail;
 use App\Mail\OrderStatusEmailAnulled;
 use App\Models\Address;
@@ -609,7 +610,7 @@ class OrderController extends Controller
         Log::info('Emitiendo evento para la orden:', $order2->toArray());
         broadcast(new OrderStatusUpdated($order2));
         broadcast(new OrderCreated($order2, $request->id));
-
+        broadcast(new OrderStatusUpdatedDistributor($order2));
         return response()->json([
             'message' => 'Tiempo estimado actualizado correctamente',
             'order' => $order,
@@ -661,7 +662,7 @@ class OrderController extends Controller
 
         Log::info('Emitiendo evento para la orden:', $order2->toArray());
         broadcast(new OrderStatusUpdated($order2));
-
+        broadcast(new OrderStatusUpdatedDistributor($order2));
         return response()->json([
             'message' => 'Estado actualizado correctamente',
             'order' => $order
@@ -715,7 +716,7 @@ class OrderController extends Controller
         Log::info('Emitiendo evento para la orden:', $order2->toArray());
         broadcast(new OrderStatusUpdated($order2));
         broadcast(new OrderCreated($order2, $request->id));
-
+        broadcast(new OrderStatusUpdatedDistributor($order2));
         // 🚀 Retornar la orden actualizada para su renderización
         return response()->json($order);
     }
@@ -834,7 +835,7 @@ class OrderController extends Controller
         Log::info('Emitiendo evento para la orden:', $order2->toArray());
         broadcast(new OrderStatusUpdated($order2));
         broadcast(new OrderCreated($order2, $request->id));
-
+        broadcast(new OrderStatusUpdatedDistributor($order2));
         return response()->json([
             'message' => 'Estado actualizado correctamente',
             'order' => $order
@@ -998,5 +999,40 @@ class OrderController extends Controller
         $order->save();
 
         return response()->json(['message' => 'Datos actualizados correctamente.']);
+    }
+
+    public function indexDistributor(Request $request)
+    {
+        $isAdmin     = (bool) $request->attributes->get('is_admin', false);
+        $distributor = $request->attributes->get('distributor');
+
+        // Fecha de hoy (en Perú)
+        $today = Carbon::now('America/Lima')->toDateString();
+
+        // Base query: solo órdenes del día de hoy
+        $query = Order::query()
+            ->with(['shipping_address'])
+            ->whereDate('created_at', $today)
+            ->latest('id');
+
+        if ($isAdmin) {
+            // Admin ve todas las órdenes de hoy
+            $query->with('distributor');
+        } else {
+            // Distribuidor: solo sus órdenes de hoy
+            $query->where('distributor_id', $distributor->id);
+        }
+
+        // Puedes limitar o paginar si lo deseas
+        $orders = $query->limit(100)->get();
+
+        $distributorName = $isAdmin ? 'Administrador — órdenes de hoy' : $distributor->name;
+
+        return view('order.indexDistributor', [
+            'orders'          => $orders,
+            'distributor'     => $distributor,
+            'distributorName' => $distributorName,
+            'isAdmin'         => $isAdmin,
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\OrderCreated;
+use App\Events\OrderCreatedDistributor;
 use App\Http\Requests\CheckoutRequest;
 use App\Mail\OrderStatusEmail;
 use App\Models\Address;
@@ -1349,7 +1350,7 @@ class CartController extends Controller
                     ];
 
                     $telegramController = new TelegramController();
-                    $telegramController->sendNotification('process', $data);
+                    //$telegramController->sendNotification('process', $data);
 
                     // Agregar movimientos a la caja
                     $paymentType = 2;
@@ -1394,6 +1395,7 @@ class CartController extends Controller
 
                     // Emitir el evento a Pusher
                     broadcast(new OrderCreated($order, $order->id));
+                    broadcast(new OrderCreatedDistributor($order));
 
                     return response()->json(['success' => true, 'message' => 'Pago realizado con POS', 'redirect_url' => $routeToRedirect]);
 
@@ -1483,6 +1485,7 @@ class CartController extends Controller
 
                     // Emitir el evento a Pusher
                     broadcast(new OrderCreated($order, $order->id));
+                    broadcast(new OrderCreatedDistributor($order));
 
                     return response()->json(['success' => true, 'message' => 'Orden creada. Pago en efectivo pendiente', 'redirect_url' => $routeToRedirect]);
 
@@ -1550,6 +1553,7 @@ class CartController extends Controller
 
                         // Emitir el evento a Pusher
                         broadcast(new OrderCreated($order, $order->id));
+                        broadcast(new OrderCreatedDistributor($order));
 
                         return response()->json(['success' => true, 'message' => 'Pago realizado con Yape/Plin', 'redirect_url' => $routeToRedirect]);
                     } else {

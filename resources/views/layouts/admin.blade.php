@@ -476,6 +476,12 @@
                                     </a>
                                 </li>
                             {{--@endcan--}}
+                                <li class="nav-item">
+                                    <a href="{{route('distributor.orders.index')}}" class="nav-link @yield('activeListOrdersDistributors')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Mis Pedidos</p>
+                                    </a>
+                                </li>
                         </ul>
                     </li>
                     @endcan

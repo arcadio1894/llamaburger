@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\Distributor;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,4 +24,13 @@ Broadcast::channel('orders', function ($user) {
 
 Broadcast::channel('active-users', function ($user) {
     return true; // Permitir acceso a todos los usuarios
+});
+
+Broadcast::channel('orders.distributor.{distributorId}', function ($user, $distributorId) {
+    $dist = Distributor::where('user_id', $user->id)->first();
+    return $dist && (int)$dist->id === (int)$distributorId;
+});
+
+Broadcast::channel('orders.admin', function ($user) {
+    return $user && $user->hasRole('administrador');
 });

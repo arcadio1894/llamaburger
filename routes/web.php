@@ -142,7 +142,7 @@ Route::get('/buscar-departamento', function (Request $request) {
 Route::middleware('auth')->group(function (){
     Route::post('/broadcasting/auth', function () {
         return \Illuminate\Support\Facades\Broadcast::auth(request());
-    });
+    })->middleware('web');
     Route::prefix('dashboard')->group(function (){
         Route::get('/principal', [WelcomeController::class, 'goToDashboard'])
             ->name('dashboard.principal')
@@ -749,6 +749,11 @@ Route::middleware('auth')->group(function (){
             ->name('users.restore')
             ->middleware('permission:usuarios.restore');
 
+
+        Route::middleware(['distributor'])->group(function () {
+            Route::get('/distributor/orders', [OrderController::class, 'indexDistributor'])
+                ->name('distributor.orders.index');
+        });
     });
 
     // TODO: RUTAS DE PREMIOS

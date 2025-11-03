@@ -18,3 +18,4 @@ mix.js('resources/js/orderPusher.js', 'public/js');
 mix.js('resources/js/orderCreated.js', 'public/js').version();
 mix.js('resources/js/comandaCreated.js', 'public/js').version();
 mix.js('resources/js/dashboardPusher.js', 'public/js').version();
+mix.js('resources/js/indexDistributor.js', 'public/js').version();

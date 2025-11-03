@@ -69,5 +69,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'anti-bot' => \App\Http\Middleware\AntiBotMiddleware::class,
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
+        'distributor' => \App\Http\Middleware\EnsureDistributor::class,
     ];
 }

@@ -2,5 +2,6 @@
     "/js/orderPusher.js": "/js/orderPusher.js?id=d51539954ba6a120c518f52abd7b07a3",
     "/js/orderCreated.js": "/js/orderCreated.js?id=3046cae2d60f83fbe6e13211152aa5a6",
     "/js/comandaCreated.js": "/js/comandaCreated.js?id=8f92d72c8acfe57a7d285213a3d53c29",
-    "/js/dashboardPusher.js": "/js/dashboardPusher.js?id=c3af841061a264bf7bb2e1eae0552e05"
+    "/js/dashboardPusher.js": "/js/dashboardPusher.js?id=c3af841061a264bf7bb2e1eae0552e05",
+    "/js/indexDistributor.js": "/js/indexDistributor.js?id=81e003e49151551906333e21876cef80"
 }
