@@ -73,7 +73,29 @@
             padding-right: 2px !important;
             padding-bottom: 0px !important;
         }
+        .legend-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 4px rgba(0,0,0,0.15);
+        }
 
+        /*.bg-gradient-success {
+            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%) !important;
+        }
+
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%) !important;
+        }
+
+        .bg-gradient-danger {
+            background: linear-gradient(135deg, #f85032 0%, #e73827 100%) !important;
+        }
+
+        .legend-dot.bg-info {
+            background: linear-gradient(135deg, #56ccf2 0%, #2f80ed 100%) !important;
+        }*/
     </style>
 @endsection
 
@@ -96,6 +118,61 @@
 @endsection
 
 @section('content')
+    <!-- 🔹 LEYENDA DE ESTADOS -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body py-3">
+            <h6 class="fw-bold text-uppercase mb-3 text-secondary">
+                <i class="fas fa-info-circle me-2 text-primary"></i> Leyenda de estados
+            </h6>
+
+            <div class="row g-3">
+                <!-- bg-gradient-warning -->
+                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
+                    <span class="legend-dot bg-gradient-warning me-2"></span>
+                    <div>
+                        <span class="fw-semibold text-dark">Comanda Lista</span> /
+                        <span class="text-muted">Delivery en Trayecto</span>
+                    </div>
+                </div>
+
+                <!-- bg-info -->
+                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
+                    <span class="legend-dot bg-info me-2"></span>
+                    <div>
+                        <span class="fw-semibold text-dark">Comanda Creada</span> /
+                        <span class="text-muted">Delivery Creado</span>
+                    </div>
+                </div>
+
+                <!-- bg-gradient-success -->
+                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
+                    <span class="legend-dot bg-gradient-success me-2"></span>
+                    <div>
+                        <span class="fw-semibold text-dark">Comanda en Cocina</span> /
+                        <span class="text-muted">Delivery Cocinándose</span>
+                    </div>
+                </div>
+
+                <!-- bg-gradient-warning -->
+                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
+                    <span class="legend-dot bg-gradient-warning border border-warning me-2"></span>
+                    <div>
+                        <span class="fw-semibold text-dark">Tiempo por Terminarse</span> /
+                        <span class="text-muted">Casi expira</span>
+                    </div>
+                </div>
+
+                <!-- bg-gradient-danger -->
+                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
+                    <span class="legend-dot bg-gradient-danger me-2"></span>
+                    <div>
+                        <span class="fw-semibold text-dark">Tiempo Expirado</span> /
+                        <span class="text-muted">Comanda fuera de tiempo</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row">
         <div class="col-12">
             <div id="kanban"></div>

@@ -3,7 +3,7 @@
 // Tarjeta específica para comanda (mesa)
 function getComandaCardCreated(t) {
     // colores distintos a delivery
-    let headerClass = "bg-gradient-warning"; // amarillo/naranja
+    let headerClass = "bg-info"; // amarillo/naranja
     let url_imprimir = document.location.origin + '/imprimir/comanda-mesa/' + t.comanda_id; // ajusta si tienes ruta
     return `
       <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
@@ -196,7 +196,7 @@ function getComandaCardProcessing(t){
 function getComandaCardShipped(t){
     return `
     <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
-      <div class="widget-user-header bg-gradient-info" style="padding:8px;">
+      <div class="widget-user-header bg-gradient-warning" style="padding:8px;">
         <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
         <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
           Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
