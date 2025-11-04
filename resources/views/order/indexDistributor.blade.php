@@ -1,5 +1,17 @@
 @extends('layouts.admin')
 
+@section('openOrders')
+    menu-open
+@endsection
+
+@section('activeOrders')
+    active
+@endsection
+
+@section('activeListOrdersDistributors')
+    active
+@endsection
+
 @section('title', 'Tablero de Órdenes (Distribuidor)')
 
 @section('styles')
@@ -74,6 +86,7 @@
                                 $longitude = $order->shipping_address ? $order->shipping_address->longitude : '';
                                 $url_comanda = url('/imprimir/comanda/' . $order->id);
                                 $url_boleta  = url('/imprimir/recibo/' . $order->id);
+                                $showDeliver = strtoupper($order->status_name) === 'EN TRAYECTO';
                             @endphp
                             <br>
                             <div class="d-flex justify-content-between align-items-center">
@@ -92,6 +105,19 @@
                                    data-longitude="{{ $longitude }}">
                                     <h6 class="description-header" style="font-size: .8rem; font-weight: bold; color: black">VER RUTA</h6>
                                 </a>
+                            </div>
+
+                            {{-- 🔹 Contenedor de acciones dinámicas para JS (necesario para insertar el botón) --}}
+                            <div class="d-flex justify-content-end mt-2" data-actions>
+                                @if($showDeliver)
+                                    {{-- Opcional: pinta el botón desde el servidor si ya está EN TRAYECTO --}}
+                                    <button class="btn btn-block btn-sm btn-success"
+                                            data-entregar-order
+                                            data-id="{{ $order->id }}"
+                                            style="font-weight:bold;">
+                                        ENTREGAR
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </article>

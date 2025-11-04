@@ -1,14 +1,28 @@
 import { subscribeDistributor, subscribeAdminAll } from './echo-distributor';
 
+// === NUEVO: endpoint de entregar ===
+const API_ENTREGAR = `${location.origin}/api/orders/entregar`;
+
+// === NUEVO: plantilla del botón ENTREGAR ===
+function renderDeliverButton(orderId) {
+    return `
+    <button class="btn btn-block btn-sm btn-success"
+            data-entregar-order
+            data-id="${orderId}"
+            style="font-weight:bold;">
+      ENTREGAR
+    </button>
+  `;
+}
+
 // Construye el HTML del card con los datos recibidos
 function buildOrderCardHtml(order) {
     const total = order?.data_totals?.total_a_pagar ?? '0.00';
     const fecha = order?.date_estimated_format ?? 'Fecha no disponible';
-    const address = order?.shipping_address?.address ?? '';
-    const lat = order?.shipping_address?.latitude ?? '';
-    const lng = order?.shipping_address?.longitude ?? '';
     const urlComanda = `${location.origin}/imprimir/comanda/${order.id}`;
     const urlBoleta  = `${location.origin}/imprimir/recibo/${order.id}`;
+
+    const showDeliver = (order.status_name || '').toUpperCase() === 'EN TRAYECTO';
 
     return `
     <div class="col-md-4 mb-3" id="order-${order.id}">
@@ -18,6 +32,7 @@ function buildOrderCardHtml(order) {
         </header>
         <div class="card-body">
           <h6 class="text-center">PEDIDO ID: #${order.id}</h6>
+
           <article class="card mb-2">
             <div class="card-body row">
               <div class="col">
@@ -49,18 +64,25 @@ function buildOrderCardHtml(order) {
           </div>
 
           <hr>
-          <br>
 
-          <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex justify-content-between align-items-center mb-2">
             <a href="${urlComanda}" target="_blank" data-imprimir_comanda="${order.id}">
               <h6 class="description-header" style="font-size:.8rem;font-weight:bold;color:black">COMANDA</h6>
             </a>
             <a href="${urlBoleta}" target="_blank" data-imprimir_boleta="${order.id}">
               <h6 class="description-header" style="font-size:.8rem;font-weight:bold;color:black">BOLETA</h6>
             </a>
-            <a href="#" data-ver_ruta_map data-id="${order.id}" data-address="${address}" data-latitude="${lat}" data-longitude="${lng}">
+            <a href="#" data-ver_ruta_map data-id="${order.id}"
+               data-address="${order?.shipping_address?.address ?? ''}"
+               data-latitude="${order?.shipping_address?.latitude ?? ''}"
+               data-longitude="${order?.shipping_address?.longitude ?? ''}">
               <h6 class="description-header" style="font-size:.8rem;font-weight:bold;color:black">VER RUTA</h6>
             </a>
+          </div>
+
+          <!-- NUEVO: contenedor de acciones -->
+          <div class="d-flex justify-content-end" data-actions>
+            ${showDeliver ? renderDeliverButton(order.id) : ''}
           </div>
         </div>
       </article>
@@ -131,17 +153,98 @@ function updateOrderCard({ order, status_name, active_step }) {
         if (Number(active_step) > idx) node.classList.add('active');
         else node.classList.remove('active');
     });
+
+    const actions = el.querySelector('[data-actions]');
+    console.log("Ver actions");
+    console.log("actions " + actions);
+    if (actions) {
+        const isShipped = (status_name || '').toUpperCase() === 'EN TRAYECTO';
+        if (isShipped) {
+            // si no existe ya el botón, lo insertamos
+            console.log("status_name " + status_name);
+            console.log("Entre a en trayecto");
+            if (!actions.querySelector('[data-entregar-order]')) {
+                actions.innerHTML = renderDeliverButton(order.id);
+            }
+        } else {
+            // otros estados: remove botón
+            console.log("status_name " + status_name);
+            console.log("No Entre a en trayecto");
+            const btn = actions.querySelector('[data-entregar-order]');
+            if (btn) btn.remove();
+        }
+    }
+}
+
+function bindEntregar() {
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-entregar-order]');
+        if (!btn) return;
+
+        e.preventDefault();
+
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+
+        $.confirm({
+            title: 'Confirmar entrega',
+            content: '¿Estás seguro de marcar este pedido como ENTREGADO?',
+            type: 'green',
+            buttons: {
+                confirmar: {
+                    text: 'Sí, entregar',
+                    btnClass: 'btn-success',
+                    action: async function () {
+                        btn.disabled = true;
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = 'Entregando...';
+
+                        try {
+                            const res = await fetch(API_ENTREGAR, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    id: id,
+                                    status: 'completed'
+                                })
+                            });
+
+                            if (!res.ok) {
+                                const t = await res.text();
+                                throw new Error(`HTTP ${res.status}: ${t}`);
+                            }
+
+                            btn.innerHTML = 'Marcado';
+                        } catch (err) {
+                            console.error('Error al entregar pedido:', err);
+                            $.alert({
+                                title: 'Error',
+                                content: 'No se pudo marcar como entregado. Intenta nuevamente.',
+                                type: 'red'
+                            });
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    }
+                },
+                cancelar: {
+                    text: 'Cancelar',
+                    btnClass: 'btn-default'
+                }
+            }
+        });
+    });
 }
 
 function bootstrap() {
     bindVerRuta();
+    bindEntregar(); // <--- NUEVO
 
     const isAdmin = !!window.__isAdmin;
     const distributorId = window.__distributorId;
 
     const onEvent = (type, e) => {
-        // e.payload = { order: {...} } por broadcastWith()
-        const order = e?.order || e?.payload?.order || e; // defensa
+        const order = e?.order || e?.payload?.order || e;
         if (!order) return;
 
         if (type === 'created') {

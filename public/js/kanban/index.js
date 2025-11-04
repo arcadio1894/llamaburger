@@ -185,6 +185,7 @@ $(document).ready(function () {
         event.cancel = true;
 
         const ent = parseEntity(itemId); // { type, id }
+        console.log(ent);
 
         // 🚫 Definir movimientos NO PERMITIDOS
         const movimientosInvalidos = [
@@ -612,7 +613,7 @@ function handleOrderMove(id, oldStatus, newStatus, itemDomId){
                         // ✅ Enviar actualización al backend
                         $.post({
                             url: '/api/orders/update-time',
-                            data: { id: itemId, estimated_time: parseInt(tiempoEstimado), status: "processing" },
+                            data: { id: id, estimated_time: parseInt(tiempoEstimado), status: "processing" },
                             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                             success: function (response) {
                                 console.log("✅ Tiempo de cocción actualizado:", response);
@@ -652,7 +653,7 @@ function handleOrderMove(id, oldStatus, newStatus, itemDomId){
     }
 
     if (oldStatus === "processing" && newStatus === "shipped") {
-        let item = itemId;
+        let item = id;
         let itemIDClear = item.replace("kanban_", "");
         console.log(item);
         console.log(itemIDClear);

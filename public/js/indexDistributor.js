@@ -6492,19 +6492,29 @@ var __webpack_exports__ = {};
   \******************************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _echo_distributor__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./echo-distributor */ "./resources/js/echo-distributor.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator["return"] && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, "catch": function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
+
+// === NUEVO: endpoint de entregar ===
+var API_ENTREGAR = "".concat(location.origin, "/api/orders/entregar");
+
+// === NUEVO: plantilla del botón ENTREGAR ===
+function renderDeliverButton(orderId) {
+  return "\n    <button class=\"btn btn-block btn-sm btn-success\"\n            data-entregar-order\n            data-id=\"".concat(orderId, "\"\n            style=\"font-weight:bold;\">\n      ENTREGAR\n    </button>\n  ");
+}
 
 // Construye el HTML del card con los datos recibidos
 function buildOrderCardHtml(order) {
-  var _order$data_totals$to, _order$data_totals, _order$date_estimated, _order$shipping_addre, _order$shipping_addre2, _order$shipping_addre3, _order$shipping_addre4, _order$shipping_addre5, _order$shipping_addre6, _order$status_name;
+  var _order$data_totals$to, _order$data_totals, _order$date_estimated, _order$status_name, _order$shipping_addre, _order$shipping_addre2, _order$shipping_addre3, _order$shipping_addre4, _order$shipping_addre5, _order$shipping_addre6;
   var total = (_order$data_totals$to = order === null || order === void 0 || (_order$data_totals = order.data_totals) === null || _order$data_totals === void 0 ? void 0 : _order$data_totals.total_a_pagar) !== null && _order$data_totals$to !== void 0 ? _order$data_totals$to : '0.00';
   var fecha = (_order$date_estimated = order === null || order === void 0 ? void 0 : order.date_estimated_format) !== null && _order$date_estimated !== void 0 ? _order$date_estimated : 'Fecha no disponible';
-  var address = (_order$shipping_addre = order === null || order === void 0 || (_order$shipping_addre2 = order.shipping_address) === null || _order$shipping_addre2 === void 0 ? void 0 : _order$shipping_addre2.address) !== null && _order$shipping_addre !== void 0 ? _order$shipping_addre : '';
-  var lat = (_order$shipping_addre3 = order === null || order === void 0 || (_order$shipping_addre4 = order.shipping_address) === null || _order$shipping_addre4 === void 0 ? void 0 : _order$shipping_addre4.latitude) !== null && _order$shipping_addre3 !== void 0 ? _order$shipping_addre3 : '';
-  var lng = (_order$shipping_addre5 = order === null || order === void 0 || (_order$shipping_addre6 = order.shipping_address) === null || _order$shipping_addre6 === void 0 ? void 0 : _order$shipping_addre6.longitude) !== null && _order$shipping_addre5 !== void 0 ? _order$shipping_addre5 : '';
   var urlComanda = "".concat(location.origin, "/imprimir/comanda/").concat(order.id);
   var urlBoleta = "".concat(location.origin, "/imprimir/recibo/").concat(order.id);
-  return "\n    <div class=\"col-md-4 mb-3\" id=\"order-".concat(order.id, "\">\n      <article class=\"card h-100\">\n        <header class=\"card-header text-center\">\n          <strong>").concat((_order$status_name = order.status_name) !== null && _order$status_name !== void 0 ? _order$status_name : '', "</strong>\n        </header>\n        <div class=\"card-body\">\n          <h6 class=\"text-center\">PEDIDO ID: #").concat(order.id, "</h6>\n          <article class=\"card mb-2\">\n            <div class=\"card-body row\">\n              <div class=\"col\">\n                <strong>Llegar\xE1 aprox.:</strong><br>").concat(fecha, "\n              </div>\n              <div class=\"col\">\n                <strong>Monto a pagar:</strong><br>S/. ").concat(total, "\n              </div>\n            </div>\n          </article>\n\n          <div class=\"track mb-2\">\n            <div class=\"step ").concat(Number(order.active_step) >= 1 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"far fa-file-alt\"></i></span>\n              <span class=\"text\">Recibido</span>\n            </div>\n            <div class=\"step ").concat(Number(order.active_step) >= 2 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"fas fa-fire\"></i></span>\n              <span class=\"text\">Cocinando</span>\n            </div>\n            <div class=\"step ").concat(Number(order.active_step) >= 3 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"fa fa-truck\"></i></span>\n              <span class=\"text\">Enviado</span>\n            </div>\n            <div class=\"step ").concat(Number(order.active_step) >= 4 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"fas fa-home\"></i></span>\n              <span class=\"text\">Entregado</span>\n            </div>\n          </div>\n\n          <hr>\n          <br>\n\n          <div class=\"d-flex justify-content-between align-items-center\">\n            <a href=\"").concat(urlComanda, "\" target=\"_blank\" data-imprimir_comanda=\"").concat(order.id, "\">\n              <h6 class=\"description-header\" style=\"font-size:.8rem;font-weight:bold;color:black\">COMANDA</h6>\n            </a>\n            <a href=\"").concat(urlBoleta, "\" target=\"_blank\" data-imprimir_boleta=\"").concat(order.id, "\">\n              <h6 class=\"description-header\" style=\"font-size:.8rem;font-weight:bold;color:black\">BOLETA</h6>\n            </a>\n            <a href=\"#\" data-ver_ruta_map data-id=\"").concat(order.id, "\" data-address=\"").concat(address, "\" data-latitude=\"").concat(lat, "\" data-longitude=\"").concat(lng, "\">\n              <h6 class=\"description-header\" style=\"font-size:.8rem;font-weight:bold;color:black\">VER RUTA</h6>\n            </a>\n          </div>\n        </div>\n      </article>\n    </div>\n  ");
+  var showDeliver = (order.status_name || '').toUpperCase() === 'EN TRAYECTO';
+  return "\n    <div class=\"col-md-4 mb-3\" id=\"order-".concat(order.id, "\">\n      <article class=\"card h-100\">\n        <header class=\"card-header text-center\">\n          <strong>").concat((_order$status_name = order.status_name) !== null && _order$status_name !== void 0 ? _order$status_name : '', "</strong>\n        </header>\n        <div class=\"card-body\">\n          <h6 class=\"text-center\">PEDIDO ID: #").concat(order.id, "</h6>\n\n          <article class=\"card mb-2\">\n            <div class=\"card-body row\">\n              <div class=\"col\">\n                <strong>Llegar\xE1 aprox.:</strong><br>").concat(fecha, "\n              </div>\n              <div class=\"col\">\n                <strong>Monto a pagar:</strong><br>S/. ").concat(total, "\n              </div>\n            </div>\n          </article>\n\n          <div class=\"track mb-2\">\n            <div class=\"step ").concat(Number(order.active_step) >= 1 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"far fa-file-alt\"></i></span>\n              <span class=\"text\">Recibido</span>\n            </div>\n            <div class=\"step ").concat(Number(order.active_step) >= 2 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"fas fa-fire\"></i></span>\n              <span class=\"text\">Cocinando</span>\n            </div>\n            <div class=\"step ").concat(Number(order.active_step) >= 3 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"fa fa-truck\"></i></span>\n              <span class=\"text\">Enviado</span>\n            </div>\n            <div class=\"step ").concat(Number(order.active_step) >= 4 ? 'active' : '', "\">\n              <span class=\"icon\"><i class=\"fas fa-home\"></i></span>\n              <span class=\"text\">Entregado</span>\n            </div>\n          </div>\n\n          <hr>\n\n          <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <a href=\"").concat(urlComanda, "\" target=\"_blank\" data-imprimir_comanda=\"").concat(order.id, "\">\n              <h6 class=\"description-header\" style=\"font-size:.8rem;font-weight:bold;color:black\">COMANDA</h6>\n            </a>\n            <a href=\"").concat(urlBoleta, "\" target=\"_blank\" data-imprimir_boleta=\"").concat(order.id, "\">\n              <h6 class=\"description-header\" style=\"font-size:.8rem;font-weight:bold;color:black\">BOLETA</h6>\n            </a>\n            <a href=\"#\" data-ver_ruta_map data-id=\"").concat(order.id, "\"\n               data-address=\"").concat((_order$shipping_addre = order === null || order === void 0 || (_order$shipping_addre2 = order.shipping_address) === null || _order$shipping_addre2 === void 0 ? void 0 : _order$shipping_addre2.address) !== null && _order$shipping_addre !== void 0 ? _order$shipping_addre : '', "\"\n               data-latitude=\"").concat((_order$shipping_addre3 = order === null || order === void 0 || (_order$shipping_addre4 = order.shipping_address) === null || _order$shipping_addre4 === void 0 ? void 0 : _order$shipping_addre4.latitude) !== null && _order$shipping_addre3 !== void 0 ? _order$shipping_addre3 : '', "\"\n               data-longitude=\"").concat((_order$shipping_addre5 = order === null || order === void 0 || (_order$shipping_addre6 = order.shipping_address) === null || _order$shipping_addre6 === void 0 ? void 0 : _order$shipping_addre6.longitude) !== null && _order$shipping_addre5 !== void 0 ? _order$shipping_addre5 : '', "\">\n              <h6 class=\"description-header\" style=\"font-size:.8rem;font-weight:bold;color:black\">VER RUTA</h6>\n            </a>\n          </div>\n\n          <!-- NUEVO: contenedor de acciones -->\n          <div class=\"d-flex justify-content-end\" data-actions>\n            ").concat(showDeliver ? renderDeliverButton(order.id) : '', "\n          </div>\n        </div>\n      </article>\n    </div>\n  ");
 }
 
 // Insertar al inicio del grid o actualizar si existe
@@ -6568,15 +6578,118 @@ function updateOrderCard(_ref) {
   steps.forEach(function (node, idx) {
     if (Number(active_step) > idx) node.classList.add('active');else node.classList.remove('active');
   });
+  var actions = el.querySelector('[data-actions]');
+  console.log("Ver actions");
+  console.log("actions " + actions);
+  if (actions) {
+    var isShipped = (status_name || '').toUpperCase() === 'EN TRAYECTO';
+    if (isShipped) {
+      // si no existe ya el botón, lo insertamos
+      console.log("status_name " + status_name);
+      console.log("Entre a en trayecto");
+      if (!actions.querySelector('[data-entregar-order]')) {
+        actions.innerHTML = renderDeliverButton(order.id);
+      }
+    } else {
+      // otros estados: remove botón
+      console.log("status_name " + status_name);
+      console.log("No Entre a en trayecto");
+      var btn = actions.querySelector('[data-entregar-order]');
+      if (btn) btn.remove();
+    }
+  }
+}
+function bindEntregar() {
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-entregar-order]');
+    if (!btn) return;
+    e.preventDefault();
+    var id = btn.getAttribute('data-id');
+    if (!id) return;
+    $.confirm({
+      title: 'Confirmar entrega',
+      content: '¿Estás seguro de marcar este pedido como ENTREGADO?',
+      type: 'green',
+      buttons: {
+        confirmar: {
+          text: 'Sí, entregar',
+          btnClass: 'btn-success',
+          action: function () {
+            var _action = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+              var originalHtml, res, t;
+              return _regeneratorRuntime().wrap(function _callee$(_context) {
+                while (1) switch (_context.prev = _context.next) {
+                  case 0:
+                    btn.disabled = true;
+                    originalHtml = btn.innerHTML;
+                    btn.innerHTML = 'Entregando...';
+                    _context.prev = 3;
+                    _context.next = 6;
+                    return fetch(API_ENTREGAR, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        id: id,
+                        status: 'completed'
+                      })
+                    });
+                  case 6:
+                    res = _context.sent;
+                    if (res.ok) {
+                      _context.next = 12;
+                      break;
+                    }
+                    _context.next = 10;
+                    return res.text();
+                  case 10:
+                    t = _context.sent;
+                    throw new Error("HTTP ".concat(res.status, ": ").concat(t));
+                  case 12:
+                    btn.innerHTML = 'Marcado';
+                    _context.next = 21;
+                    break;
+                  case 15:
+                    _context.prev = 15;
+                    _context.t0 = _context["catch"](3);
+                    console.error('Error al entregar pedido:', _context.t0);
+                    $.alert({
+                      title: 'Error',
+                      content: 'No se pudo marcar como entregado. Intenta nuevamente.',
+                      type: 'red'
+                    });
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                  case 21:
+                  case "end":
+                    return _context.stop();
+                }
+              }, _callee, null, [[3, 15]]);
+            }));
+            function action() {
+              return _action.apply(this, arguments);
+            }
+            return action;
+          }()
+        },
+        cancelar: {
+          text: 'Cancelar',
+          btnClass: 'btn-default'
+        }
+      }
+    });
+  });
 }
 function bootstrap() {
   bindVerRuta();
+  bindEntregar(); // <--- NUEVO
+
   var isAdmin = !!window.__isAdmin;
   var distributorId = window.__distributorId;
   var onEvent = function onEvent(type, e) {
     var _e$payload;
-    // e.payload = { order: {...} } por broadcastWith()
-    var order = (e === null || e === void 0 ? void 0 : e.order) || (e === null || e === void 0 || (_e$payload = e.payload) === null || _e$payload === void 0 ? void 0 : _e$payload.order) || e; // defensa
+    var order = (e === null || e === void 0 ? void 0 : e.order) || (e === null || e === void 0 || (_e$payload = e.payload) === null || _e$payload === void 0 ? void 0 : _e$payload.order) || e;
     if (!order) return;
     if (type === 'created') {
       upsertOrderCard(order);
