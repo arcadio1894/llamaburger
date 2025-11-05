@@ -468,20 +468,22 @@
                             </li>
                             @endcan
 
-                            {{--@can('pedidos.anulados')--}}
+                            @can('pedidos.ver_listado_comprobantes')
                                 <li class="nav-item">
                                     <a href="{{route('invoices.index')}}" class="nav-link @yield('activeListInvoices')">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Comprobantes Mesa</p>
                                     </a>
                                 </li>
-                            {{--@endcan--}}
+                            @endcan
+                            @can('pedidos.ver_mis_pedidos')
                                 <li class="nav-item">
                                     <a href="{{route('distributor.orders.index')}}" class="nav-link @yield('activeListOrdersDistributors')">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Mis Pedidos</p>
                                     </a>
                                 </li>
+                            @endcan
                         </ul>
                     </li>
                     @endcan
@@ -608,7 +610,7 @@
                     </li>
                     @endcan
 
-
+                    @can('pedido_externo.enable')
                     <li class="nav-item has-treeview @yield('openSalas')">
                         <a href="#" class="nav-link @yield('activeSalas')">
                             <i class="nav-icon fas fa-utensils"></i>
@@ -618,23 +620,25 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
-                            {{--@can('espacios.enable_salas')--}}
+                            @can('pedido_externo.list')
                                 <li class="nav-item">
                                     <a href="{{route('pedido.externo.index')}}" class="nav-link @yield('activeListPedidoExterno')">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Listar</p>
                                     </a>
                                 </li>
-                            {{--@endcan--}}
-                            <li class="nav-item">
-                                <a href="{{route('pedido.externo.crear')}}" class="nav-link @yield('activeCreatePedidoExterno')">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Crear pedido</p>
-                                </a>
-                            </li>
+                            @endcan
+                            @can('pedido_externo.create')
+                                <li class="nav-item">
+                                    <a href="{{route('pedido.externo.crear')}}" class="nav-link @yield('activeCreatePedidoExterno')">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Crear pedido</p>
+                                    </a>
+                                </li>
+                            @endcan
                         </ul>
                     </li>
-
+                    @endcan
 
                     @can('mantenedores.enable')
                     <li class="nav-header">MANTENEDORES</li>

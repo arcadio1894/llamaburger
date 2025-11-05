@@ -82,6 +82,8 @@ return [
                 'anular_orden'  => ['Anular orden', 'Anular orden'],
                 'activar_orden'  => ['Anular orden', 'Anular orden'],
                 'enviar_whatsapp'  => ['Enviar mensaje whatsapp', 'Enviar mensaje whatsapp'],
+                'ver_listado_comprobantes' => ['Ver listado de comprobantes', 'Ver listado de comprobantes'],
+                'ver_mis_pedidos'  => ['Ver mis pedidos', 'Ver mis pedidos'],
             ],
         ],
 
@@ -148,6 +150,18 @@ return [
                 'restore'  => ['Restaurar mesas','Restaurar mesa eliminada'],
                 'abrir'    => ['Abrir mesas',    'Abrir mesa para atención'],
                 'cerrar'   => ['Cerrar mesas',   'Cerrar mesa'],
+            ],
+        ],
+
+        'pedido_externo' => [
+            'label'   => 'Pedidos Externos',
+            'actions' => [
+                'list'     => ['Listar pedidos externos',   'Listar pedidos externos'],
+                'create'   => ['Crear pedidos externos',    'Crear pedidos externos'],
+                'abrir'    => ['Abrir pedido externo',    'Abrir pedido externo'],
+                'ir_a_pagar'     => ['Ir a pagar pedido externo',   'Ir a pagar pedido externo'],
+                'ver_detalles'  => ['Ver detalles pedido externo', 'Ver detalles pedido externo'],
+                'enable'  => ['Habilitar pedidos externos','Habilitar pedidos externos'],
             ],
         ],
 

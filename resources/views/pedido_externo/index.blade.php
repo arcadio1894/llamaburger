@@ -49,12 +49,9 @@
                 <h4 class="mb-0">Pedidos Externos</h4>
                 <small class="text-muted">Gestión rápida de pedidos sin mesa.</small>
             </div>
-            <form method="POST" action="{{ route('pedido.externo.crear') }}">
-                @csrf
-                <button class="btn btn-dark px-4">
-                    <i class="bi bi-plus-lg me-1"></i> Nuevo Pedido Externo
-                </button>
-            </form>
+
+            <a class="btn btn-dark px-4" href="{{ route('pedido.externo.crear') }}"><i class="bi bi-plus-lg me-1"></i> Nuevo Pedido Externo</a>
+
         </div>
 
         {{-- Filtros / Búsqueda --}}
