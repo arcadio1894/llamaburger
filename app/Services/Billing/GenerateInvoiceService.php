@@ -8,6 +8,8 @@
 namespace App\Services\Billing;
 
 use App\Models\Atencion;
+use App\Models\CashMovement;
+use App\Models\CashRegister;
 use App\Models\Cliente;
 use App\Models\ComandaItem;
 use App\Models\ComandaItemLiquidacion;
@@ -15,6 +17,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -37,6 +40,10 @@ class GenerateInvoiceService
      */
     public function handle(Atencion $atencion, array $billingData, ?array $paymentData = null, ?array $selectedItems = null)
     {
+        /*dump($atencion);
+        dump($billingData);
+        dump($paymentData);
+        dd();*/
         if ($atencion->estado !== 'por_pagar') {
             throw ValidationException::withMessages([
                 'atencion' => 'La atención debe estar en estado por_pagar para facturar.'
@@ -141,7 +148,35 @@ class GenerateInvoiceService
         }
 
         // =====================================================
-        // 4) Transacción principal
+        // 4) Verificacion de cajas registradoras
+        // =====================================================
+        $firstPagoSend = is_array($paymentData) && count($paymentData) > 0 ? $paymentData[0] : null;
+        if ( $firstPagoSend['metodo'] == 'pos' || $firstPagoSend['metodo'] == 'yape_plin' )
+        {
+            // Obtener la caja del tipo de pago
+            $cashRegister = CashRegister::where('type', 'bancario')
+                ->where('status', 1) // Caja abierta
+                ->orderByDesc('opening_time')
+                ->first();
+
+            if (!isset($cashRegister)) {
+                DB::rollBack();
+                return response()->json(['message' => 'No hay caja abierta para este tipo de pago.'], 422);
+            }
+        } elseif ( $firstPagoSend['metodo'] == 'efectivo' ) {
+            $cashRegister = CashRegister::where('type', 'efectivo')
+                ->where('status', 1) // Caja abierta
+                ->orderByDesc('opening_time')
+                ->first();
+
+            if (!isset($cashRegister)) {
+                DB::rollBack();
+                return response()->json(['message' => 'No hay caja abierta para este tipo de pago.'], 422);
+            }
+        }
+
+        // =====================================================
+        // 5) Transacción principal
         // =====================================================
         return DB::transaction(function () use (
             $atencion, $tipo, $customer, $billingData, $allItems,
@@ -364,6 +399,113 @@ class GenerateInvoiceService
                     ]);
                 }
             }
+
+            // -------------------------
+            // Cajas registradoras
+            // -------------------------
+            if ($firstPago) {
+                $metodo   = $firstPago['metodo'] ?? null;           // 'efectivo', 'yape_plin', 'pos'
+                $monto    = $firstPago['monto'] ?? null;            // total cobrado
+                $recibido = $firstPago['monto_recibido'] ?? null;   // solo para efectivo
+                $ref      = $firstPago['referencia'] ?? null;       // yape / plin / pos
+                $vuelto   = $firstPago['vuelto'] ?? null;
+                // 2) buscar payment_method por code
+                // en tu tabla payment_methods tienes: name, code, ...
+                if ($metodo) {
+                    $pm = PaymentMethod::where('code', $metodo)->first();
+                    if ($pm) {
+                        $paymentMethodId = $pm->id;
+                    }
+                }
+
+                // 3) payment_amount
+                // - si es efectivo: guardar lo que RECIBIÓ (monto_recibido) porque ahí ves si recibió más y hubo vuelto
+                // - si es yape / plin / pos: guardar lo que se cobró (monto)
+                if ($metodo === 'efectivo') {
+                    $paymentAmount = $recibido ?: $monto; // fallback al monto si por alguna razón no vino monto_recibido
+                    $cashRegister = CashRegister::where('type', 'efectivo')
+                        ->where('status', 1) // Caja abierta
+                        ->orderByDesc('opening_time')
+                        ->first();
+                    CashMovement::create([
+                        'cash_register_id' => $cashRegister->id,
+                        'order_id' => null,
+                        'invoice_id' => $inv->id,
+                        'user_id' => Auth::id(),
+                        'type' => 'sale', // Tipo de movimiento: venta
+                        'subtype' => null,
+                        'amount' => $paymentAmount,
+                        'description' => 'Venta registrada con tipo de pago: efectivo',
+                    ]);
+
+                    // Actualizar el saldo actual y el total de ventas en la caja
+                    $cashRegister->current_balance += (float)$paymentAmount;
+                    $cashRegister->total_sales += (float)$paymentAmount;
+                    $cashRegister->save();
+                    if ($vuelto > 0) {
+                        // Crear el movimiento de egreso (vuelto)
+                        CashMovement::create([
+                            'cash_register_id' => $cashRegister->id,
+                            'order_id' => null,
+                            'invoice_id' => $inv->id,
+                            'user_id' => Auth::id(),
+                            'type' => 'expense', // Tipo de movimiento: egreso
+                            'amount' => $vuelto,
+                            'subtype' => null,
+                            'description' => 'Vuelto entregado de la venta',
+                        ]);
+
+                        // Actualizar el saldo de la caja del vuelto
+                        $cashRegister->current_balance -= $vuelto;
+                        $cashRegister->total_expenses += $vuelto;
+                        $cashRegister->save();
+                    }
+                } elseif ($metodo == 'yape_plin'){
+                    $paymentAmount = $monto;
+                    $cashRegister = CashRegister::where('type', 'bancario')
+                        ->where('status', 1) // Caja abierta
+                        ->orderByDesc('opening_time')
+                        ->first();
+                    $cashMovement = CashMovement::create([
+                        'cash_register_id' => $cashRegister->id,
+                        'order_id' => null,
+                        'invoice_id' => $inv->id,
+                        'user_id' => Auth::id(),
+                        'type' => 'sale', // Tipo de movimiento: venta
+                        'amount' => $paymentAmount,
+                        'subtype' => 'yape',
+                        'description' => 'Venta registrada con tipo de pago: yape/plin'
+                    ]);
+
+                    // Actualizar el saldo actual y el total de ventas en la caja
+                    $cashRegister->current_balance += (float)$cashMovement->amount;
+                    $cashRegister->total_sales += (float)$cashMovement->amount;
+                    $cashRegister->save();
+                } elseif ( $metodo == 'pos' ) {
+                    $paymentAmount = $monto;
+
+                    $cashRegister = CashRegister::where('type', 'bancario')
+                        ->where('status', 1) // Caja abierta
+                        ->orderByDesc('opening_time')
+                        ->first();
+                    $cashMovement = CashMovement::create([
+                        'cash_register_id' => $cashRegister->id,
+                        'order_id' => null,
+                        'invoice_id' => $inv->id,
+                        'user_id' => Auth::id(),
+                        'type' => 'sale', // Tipo de movimiento: venta
+                        'amount' => $paymentAmount,
+                        'subtype' => 'pos',
+                        'description' => 'Venta registrada con tipo de pago: pos',
+                        'regularize' => 0
+                    ]);
+                }
+            }
+
+
+
+
+
 
             // -------------------------
             // Cierre de atención

@@ -276,6 +276,13 @@
                             Cancelar
                         </button>
                     </form>
+                    <form class="mr-1">
+                        <a class="btn btn-sm btn-info"
+                           href="{{ route('precuenta.imprimir', $atencion) }}"
+                           target="_blank" rel="noopener">
+                            Imprimir Pre-Cuenta
+                        </a>
+                    </form>
                     {{-- Botón: Ir a Pagar --}}
                     <form method="POST" action="{{ route('atenciones.irPagar', $atencion) }}">
                         @csrf

@@ -102,11 +102,15 @@ class BillingController extends Controller
 
         // 5) Si es ticket: no emitir a Nubefact
         if ($invoice->tipo === 'ticket') {
+
+            // TODO:
+
+
             return response()->json([
                 'ok'               => true,
                 'msg'              => 'Comprobante generado (ticket interno).',
                 'invoice_id'       => $invoice->id,
-                'comprobante_url'  => route('invoices.show', $invoice),
+                'comprobante_url'  => route('invoices.print', $invoice),
                 'pdf_url'          => null,
             ]);
         }
@@ -129,6 +133,8 @@ class BillingController extends Controller
                 'sent_to_kitchen_at' => now(),    // si lo tienes; si no, omite
             ]);
 
+            // TODO
+
             broadcast(new ComandaCreated($comanda));
         }
 
@@ -149,6 +155,8 @@ class BillingController extends Controller
 
             // Persistimos datos devueltos (serie/numero, hash, enlaces, etc.)
             $this->actualizarInvoiceConRespuesta($invoice, $nubefactRes);
+
+            // TODO
 
             return response()->json([
                 'ok'               => true,

@@ -6607,13 +6607,13 @@ function obtenerColorClase(status) {
       return "bg-info";
     // Azul
     case "processing":
-      return "bg-success";
+      return "bg-info";
     // Verde
     case "shipped":
-      return "bg-warning";
+      return "bg-info";
     // Amarillo
     default:
-      return "bg-secondary";
+      return "bg-info";
     // Gris
   }
 }

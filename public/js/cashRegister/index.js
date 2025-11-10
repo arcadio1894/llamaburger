@@ -811,6 +811,40 @@ function renderDataTable(data) {
 
         // Agregar el bloque de botones al DOM
         botones2.append(cloneBtn2);
+    } else {
+        if (data.invoice_id != null)
+        {
+            const botones3 = clone.querySelector('[data-buttons]');
+            // Clon del template
+            const cloneBtn3 = activateTemplate('#template-button');
+            // ---- botón imprimir boleta (permiso: caja.imprimir_boleta) ----
+            const btnImprimir = cloneBtn3.querySelector('[data-print_nota]');
+            console.log(btnImprimir);
+            if (hasPerm('caja.imprimir_boleta')) {
+                btnImprimir.setAttribute('data-id', data.id);
+                const url = document.location.origin + '/dashboard/invoices/' + data.invoice_id+'/print';
+                btnImprimir.setAttribute('href', url);
+                // si quieres, asegúrate de que esté visible:
+                btnImprimir.style.display = '';
+            } else {
+                // sin permiso -> ocultar/comentar el botón
+                btnImprimir.style.display = 'none';
+                // o: btnImprimir.remove();
+            }
+
+            // ---- botón regularizar (permiso: caja.regularize) ----
+            const regularizarBtn2 = cloneBtn3.querySelector('[data-regularizar]');
+            if (hasPerm('caja.regularize') && data.type === 'Regularizar') {
+                regularizarBtn2.setAttribute('data-id', data.id);
+                regularizarBtn2.style.display = '';
+            } else {
+                regularizarBtn2.style.display = 'none';
+                // o: regularizarBtn.remove();
+            }
+
+            // Agregar el bloque de botones al DOM
+            botones3.append(cloneBtn3);
+        }
     }
 
     $("#body-table").append(clone);

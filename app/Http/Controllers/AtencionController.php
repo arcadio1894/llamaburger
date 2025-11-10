@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Atencion;
 use App\Models\Category;
 use App\Models\Comanda;
+use App\Models\DataGeneral;
 use App\Models\Mesa;
 use App\Models\Mozo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AtencionController extends Controller
 {
@@ -311,5 +313,25 @@ class AtencionController extends Controller
 
         // Redirige a la vista de pagos (la misma que usas con los externos)
         return redirect()->route('pagos.create', $atencion);
+    }
+
+    /**
+     * Imprime la pre-cuenta de una Atención (todas sus comandas e ítems).
+     * No incluye totales (ni propina ni descuentos).
+     */
+    public function imprimirPrecuenta(Atencion $atencion)
+    {
+        // Trae mesa, mozo y TODAS las comandas con sus items
+        $atencion->load(['mesa', 'mozo', 'comandas.items']);
+
+        $igvRate = optional(DataGeneral::where('name', 'igv_rate')->first())->valueNumber;
+        $igvRate = $igvRate !== null ? round(((float) $igvRate) / 100, 2) : 0.18;
+
+        // Render PDF
+        $pdf = Pdf::loadView('comanda.precuenta', compact('atencion', 'igvRate'))
+            ->setPaper([0, 0, 226.8, 900], 'portrait');
+
+        // Muestra en navegador (o usa ->download)
+        return $pdf->stream("precuenta-{$atencion->id}.pdf");
     }
 }

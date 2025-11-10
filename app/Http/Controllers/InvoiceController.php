@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DataGeneral;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
 {
@@ -38,23 +40,68 @@ class InvoiceController extends Controller
     // Imprimir PDF (Nubefact)
     public function imprimir(Invoice $invoice)
     {
+        // 1) Si el comprobante es "ticket": renderizamos nuestro PDF interno
+        if (strtolower($invoice->tipo ?? '') === 'ticket') {
+            // Trae items
+            $invoice->load(['items']);
+
+            // IGV: DataGeneral(name='igv_rate') en porcentaje (p.ej. 18), fallback 18%
+            $igvRate = optional(DataGeneral::where('name', 'igv_rate')->first())->valueNumber;
+            $igvRate = $igvRate !== null ? round(((float) $igvRate) / 100, 2) : 0.18;
+
+            // Subtotal = suma(cantidad * valor_unitario [SIN IGV])
+            $subtotal = $invoice->items->sum(function ($it) {
+                return (float) $it->cantidad * (float) $it->valor_unitario;
+            });
+
+            // Descuento global
+            $descuento = (float) ($invoice->descuento ?? 0.0);
+
+            // Base imponible
+            $base = max($subtotal - $descuento, 0);
+
+            // IGV
+            $igv = round($base * $igvRate, 2);
+
+            // Propina (no gravada)
+            $propina = (float) ($invoice->op_inafecta ?? 0.0);
+
+            // Total a pagar
+            $total = round($base + $igv + $propina, 2);
+
+            $totals = [
+                'subtotal'  => round($subtotal, 2),
+                'descuento' => round($descuento, 2),
+                'base'      => round($base, 2),
+                'igv'       => round($igv, 2),
+                'propina'   => round($propina, 2),
+                'total'     => round($total, 2),
+                'igvRate'   => $igvRate,
+            ];
+
+            // Renderiza el PDF del ticket
+            $pdf = Pdf::loadView('comanda.ticket-venta', compact('invoice', 'totals'))
+                ->setPaper([0, 0, 226.8, 900], 'portrait');
+
+            return $pdf->stream("ticket-venta-{$invoice->id}.pdf");
+        }
+
+        // 2) Para boleta/factura: usar enlace de Nubefact como antes
         $extra = $invoice->extra ?? [];
 
-        // 1. Lo que tú realmente guardas
         $pdf =
             data_get($extra, 'nubefact.enlace_del_pdf')      // https://...pdf
             ?? data_get($extra, 'nubefact.enlace')           // https://... (sin .pdf)
-            ?? data_get($extra, 'enlace_del_pdf')            // por si algún día lo guardas arriba
-            ?? data_get($extra, 'enlace')                    // por si algún día lo guardas arriba
+            ?? data_get($extra, 'enlace_del_pdf')            // alterno
+            ?? data_get($extra, 'enlace')                    // alterno
             ?? null;
 
         if ($pdf) {
-            // si es el enlace sin .pdf, igual Nubefact lo abre bonito en web
             return redirect()->away($pdf);
         }
 
-        // Si llegamos acá es porque el invoice no tiene info de Nubefact guardada
         return back()->withErrors('No se encontró el enlace al PDF del comprobante en "extra.nubefact".');
+
     }
 
     // Anular comprobante (stub)

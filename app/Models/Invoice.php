@@ -82,4 +82,26 @@ class Invoice extends Model
                 return '-';
         }
     }
+
+    public function getPaymentMethodNameAttribute()
+    {
+        $payment = $this->payments->first();
+
+        if (!$payment) {
+            return 'SIN METODO DE PAGO';
+        }
+
+        switch ($payment->metodo) {
+            case 'efectivo':
+                return "EFECTIVO";
+            case 'pos':
+                return "CONTRAENTREGA POS";
+
+            case 'yape_plin':
+                return "YAPE / PLIN";
+
+            default:
+                return 'SIN METODO DE PAGO';
+        }
+    }
 }

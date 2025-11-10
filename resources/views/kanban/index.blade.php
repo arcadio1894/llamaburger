@@ -126,30 +126,12 @@
             </h6>
 
             <div class="row g-3">
-                <!-- bg-gradient-warning -->
-                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
-                    <span class="legend-dot bg-gradient-warning me-2"></span>
-                    <div>
-                        <span class="fw-semibold text-dark">Comanda Lista</span> /
-                        <span class="text-muted">Delivery en Trayecto</span>
-                    </div>
-                </div>
-
                 <!-- bg-info -->
                 <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
                     <span class="legend-dot bg-info me-2"></span>
                     <div>
                         <span class="fw-semibold text-dark">Comanda Creada</span> /
                         <span class="text-muted">Delivery Creado</span>
-                    </div>
-                </div>
-
-                <!-- bg-gradient-success -->
-                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center">
-                    <span class="legend-dot bg-gradient-success me-2"></span>
-                    <div>
-                        <span class="fw-semibold text-dark">Comanda en Cocina</span> /
-                        <span class="text-muted">Delivery Cocinándose</span>
                     </div>
                 </div>
 

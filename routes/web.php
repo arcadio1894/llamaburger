@@ -625,6 +625,9 @@ Route::middleware('auth')->group(function (){
             ->name('atenciones.facturar')
             /*->middleware('permission:pagos.generar')*/;
 
+        Route::get('/precuenta/{atencion}', [AtencionController::class, 'imprimirPrecuenta'])
+            ->name('precuenta.imprimir');
+
         Route::get('/invoices/{invoice}', [BillingController::class, 'show'])->name('invoices.show');
 
         Route::prefix('invoices')->group(function () {

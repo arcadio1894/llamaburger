@@ -243,8 +243,14 @@
                 <h4 class="mb-0">Pedido Externo <span class="badge bg-dark">#{{ $atencion->id }}</span></h4>
                 <small class="text-muted">Estado: {{ strtoupper($atencion->estado) }} · Comanda #{{ $comanda->numero }}</small>
             </div>
+
             <div>
-                <a href="{{ route('pedido.externo.index') }}" class="btn btn-outline-secondary">Volver</a>
+                <a class="btn btn-sm btn-info"
+                   href="{{ route('precuenta.imprimir', $atencion) }}"
+                   target="_blank" rel="noopener">
+                    Imprimir Pre-Cuenta
+                </a>
+                <a href="{{ route('pedido.externo.index') }}" class="btn btn-sm btn-outline-secondary">Volver</a>
             </div>
         </div>
 
@@ -292,6 +298,8 @@
                     <div class="d-flex justify-content-between font-weight-bold">
                         <span>Total:</span><span id="ord-total">S/ 0.00</span>
                     </div>
+
+
                     @if(in_array($comanda->estado, ['enviada','cocinando','servida']))
 
                         <button id="btn-send-pay" class="btn btn-dark btn-block mt-2" disabled>IR A PAGAR</button>

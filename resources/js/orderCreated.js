@@ -229,11 +229,11 @@ function obtenerColorClase(status) {
         case "created":
             return "bg-info"; // Azul
         case "processing":
-            return "bg-success"; // Verde
+            return "bg-info"; // Verde
         case "shipped":
-            return "bg-warning"; // Amarillo
+            return "bg-info"; // Amarillo
         default:
-            return "bg-secondary"; // Gris
+            return "bg-info"; // Gris
     }
 }
 

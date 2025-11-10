@@ -79,7 +79,7 @@
                                 </a>
                             @else
                                 <a class="btn btn-xs btn-info"
-                                   href="{{ route('invoices.print', $inv) }}">
+                                   href="{{ route('invoices.print', $inv) }}" target="_blank">
                                     Imprimir
                                 </a>
                             @endif

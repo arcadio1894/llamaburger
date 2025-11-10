@@ -12,6 +12,8 @@ class CashMovement extends Model
     protected $fillable = [
         'cash_register_id',
         'order_id',
+        'invoice_id',   // NUEVO
+        'user_id',      // NUEVO
         'type',
         'amount',
         'description',
@@ -21,6 +23,12 @@ class CashMovement extends Model
 
     protected $dates = ['created_at', 'updated_at'];
 
+    // (Opcional) casts recomendados
+    protected $casts = [
+        'amount'     => 'decimal:2',
+        'regularize' => 'boolean',
+    ];
+
     public function cashRegister()
     {
         return $this->belongsTo(CashRegister::class);
@@ -29,5 +37,15 @@ class CashMovement extends Model
     public function order()
     {
         return$this->belongsTo(Order::class);
+    }
+
+    public function invoice() // NUEVO
+    {
+        return $this->belongsTo(Invoice::class);
+    }
+
+    public function user() // NUEVO
+    {
+        return $this->belongsTo(User::class);
     }
 }

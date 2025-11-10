@@ -476,7 +476,7 @@ $(document).ready(function() {
             });
         } else if (method === 'efectivo') {
             const recibido = parseFloat($('#cashAmount').val() || '0');
-            const vuelto = Math.max(0, recibido - total);
+            const vuelto = Math.max(0, (recibido - total)).toFixed(2);
             data.pagos.push({
                 metodo: 'efectivo',
                 monto: total,

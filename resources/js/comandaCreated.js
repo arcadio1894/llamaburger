@@ -178,7 +178,7 @@ function getComandaCardProcessing(t){
      data-total-min="${t.estimated_minutes || 60}"
      data-estado="${t.estado}"
      style="margin:5px;padding:5px;width:100%;min-height:120px;">
-  <div class="widget-user-header bg-gradient-success eta-header" style="padding:8px; transition:background-color .3s ease;">
+  <div class="widget-user-header bg-info eta-header" style="padding:8px; transition:background-color .3s ease;">
     <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
     <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
       Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}
@@ -196,7 +196,7 @@ function getComandaCardProcessing(t){
 function getComandaCardShipped(t){
     return `
     <div class="card card-widget widget-user" style="margin:5px;padding:5px;width:100%;min-height:120px;">
-      <div class="widget-user-header bg-gradient-warning" style="padding:8px;">
+      <div class="widget-user-header bg-info" style="padding:8px;">
         <span class="widget-user-desc" style="font-size:14px">Comanda #${t.numero}</span>
         <h5 class="widget-user-username" style="font-size:.9rem;padding-top:3px">
           Mesa ${t.mesa || '-'} <br> Mozo: ${t.mozo || '-'}

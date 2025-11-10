@@ -6,9 +6,12 @@ use App\Events\ComandaCreated;
 use App\Events\ComandaStatusUpdated;
 use App\Models\Atencion;
 use App\Models\Comanda;
+use App\Models\DataGeneral;
+use App\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ComandaController extends Controller
 {
@@ -197,5 +200,55 @@ class ComandaController extends Controller
         ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    public function ticketVenta($invoiceId)
+    {
+        // Trae invoice con sus items
+        $invoice = Invoice::with(['items'])->findOrFail($invoiceId);
+
+        // IGV por defecto 18%, pero si lo guardas en BD úsalo
+        $dataIGV = DataGeneral::where('name', 'igv_rate')->first();
+        $igvNumber = $dataIGV->valueNumber;
+        $igvRate = round($igvNumber / 100, 2);
+
+
+        // Subtotal = suma(cantidad * valor_unitario [SIN IGV])
+        $subtotal = $invoice->items->sum(function ($it) {
+            return (float)$it->cantidad * (float)$it->valor_unitario;
+        });
+
+        // Descuento global del comprobante (resta a la base)
+        $descuento = (float)($invoice->descuento ?? 0.0);
+
+        // Base imponible = subtotal - descuento (nunca negativa)
+        $base = max($subtotal - $descuento, 0);
+
+        // IGV = base * igvRate
+        $igv = round($base * $igvRate, 2);
+
+        // Propina (no gravada). Tomada de op_inafecta según tu modelo de datos
+        $propina = (float)($invoice->op_inafecta ?? 0.0);
+
+        // Total a pagar = base + igv + propina
+        $total = round($base + $igv + $propina, 2);
+
+        $totals = [
+            'subtotal'  => round($subtotal, 2),
+            'descuento' => round($descuento, 2),
+            'base'      => round($base, 2),
+            'igv'       => round($igv, 2),
+            'propina'   => round($propina, 2),
+            'total'     => round($total, 2),
+            'igvRate'   => $igvRate,
+        ];
+
+        // Renderiza el PDF (usa tu vista abajo)
+        $pdf = Pdf::loadView('comanda.ticket-venta', compact('invoice', 'totals'))
+            ->setPaper([0, 0, 226.8, 900], 'portrait');
+
+        // Descarga o muestra en navegador
+        return $pdf->stream("ticket-venta-{$invoice->id}.pdf");
+        // return $pdf->stream();
     }
 }

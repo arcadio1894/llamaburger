@@ -506,6 +506,7 @@ class CashRegisterController extends Controller
                     "type" => $tipo,
                     "amount" => $movement->amount,
                     "order_id" => $movement->order_id,
+                    "invoice_id" => $movement->invoice_id,
                     "origen" => ($movement->subtype == null) ? 'N/A': $movement->subtype,
                     "description" => $movement->description,
                     "date" => $movement->created_at->format('d/m/Y h:i A')

@@ -363,5 +363,5 @@
 @endsection
 
 @section('scripts')
-    <script src="{{ asset('js/cashRegister/index.js') }}"></script>
+    <script src="{{ asset('js/cashRegister/index.js') }}?v={{ time() }}"></script>
 @endsection
