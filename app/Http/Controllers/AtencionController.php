@@ -298,21 +298,49 @@ class AtencionController extends Controller
 
     public function irPagar(Request $request, Atencion $atencion)
     {
+        // Solo aplica a mesas (externo usa otro flujo/botón)
         abort_unless($atencion->tipo === 'mesa', 404);
 
-        $comanda = $atencion->comandas()->where('numero', 1)->first();
-        if (!$comanda) {
-            return back()->withErrors('La comanda no existe.');
+        // 0) Debe existir al menos una comanda en la atención
+        $existenComandas = $atencion->comandas()->exists();
+        if (!$existenComandas) {
+            return back()->with('warning', 'No hay comandas en esta atención.');
         }
-        if ($comanda->items()->count() === 0) {
-            return back()->withErrors('Agrega al menos un producto.');
+
+        // 1) No debe haber comandas en borrador
+        $hayBorrador = $atencion->comandas()
+            ->where('estado', 'borrador')
+            ->exists();
+
+        if ($hayBorrador) {
+            return back()->with('warning', 'No puedes ir a pagar: existe al menos una comanda en Borrador.');
+        }
+
+        // 2) Todas deben estar servidas
+        $hayNoServidas = $atencion->comandas()
+            ->where('estado', '!=', 'servida')
+            ->exists();
+
+        if ($hayNoServidas) {
+            return back()->with('warning', 'No puedes ir a pagar: todas las comandas deben estar Servidas.');
+        }
+
+        // 3) Debe haber al menos una comanda con items
+        $hayItems = $atencion->comandas()
+            ->whereHas('items')
+            ->exists();
+
+        if (!$hayItems) {
+            return back()->with('warning', 'Agrega al menos un producto antes de ir a pagar.');
         }
 
         // Estado intermedio
         $atencion->update(['estado' => 'por_pagar']);
 
         // Redirige a la vista de pagos (la misma que usas con los externos)
-        return redirect()->route('pagos.create', $atencion);
+        return redirect()
+            ->route('pagos.create', $atencion)
+            ->with('success', 'Redirigiendo a la pantalla de pagos.');
     }
 
     /**

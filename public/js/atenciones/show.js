@@ -763,6 +763,13 @@
             });
         });
 
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(el => {
+                el.classList.remove('show');
+                el.classList.add('fade');
+                setTimeout(() => el.remove(), 500);
+            });
+        }, 5000);
     });
 
     // Calcula altura del área scrolleable (header + top consumen alto)
@@ -783,4 +790,6 @@
     $(window).on('resize', sizeOrderAsideBody);
 
     $(window).on('resize', sizePOModal);
+
+
 })(jQuery);

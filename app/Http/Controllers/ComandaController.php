@@ -40,6 +40,16 @@ class ComandaController extends Controller
 
     public function createNext(Request $request, Atencion $atencion)
     {
+        // Verifica si hay alguna comanda 'borrador' (no enviada aún)
+        $tieneBorrador = $atencion->comandas()
+            ->where('estado', 'borrador')
+            ->exists();
+
+        if ($tieneBorrador) {
+            return back()
+                ->with('warning', 'No puedes crear una nueva comanda mientras exista una en borrador.');
+        }
+
         $nextN = (int) ($atencion->comandas()->max('numero') ?? 0) + 1;
 
         $comanda = DB::transaction(function() use ($atencion, $nextN) {
@@ -50,13 +60,9 @@ class ComandaController extends Controller
             ]);
         });
 
-        // Si quieres JSON (AJAX) devuelve JSON; si la crearás con botón normal, redirige:
-        if ($request->wantsJson()) {
-            return response()->json(['ok'=>true, 'comanda'=>$comanda], 201);
-        }
-
-        return redirect()->route('atenciones.comanda.show', [$atencion->id, $comanda->numero])
-            ->with('success', "Comanda #{$comanda->numero} creada.");
+        return redirect()
+            ->route('atenciones.comanda.show', [$atencion->id, $comanda->numero])
+            ->with('success', "Comanda #{$comanda->numero} creada correctamente.");
     }
 
     public function send(Request $request, Comanda $comanda)
