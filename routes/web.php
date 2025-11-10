@@ -771,6 +771,14 @@ Route::middleware('auth')->group(function (){
 
 });
 
+Route::get('/comandas/{comanda}/estado', function(\App\Models\Comanda $comanda) {
+    return response()->json([
+        'ok' => true,
+        'estado' => $comanda->estado,
+        'can_add' => $comanda->estado === 'borrador',
+    ]);
+})->name('comandas.estado');
+
 // TODO: RUTAS DE PREMIOS
 Route::get('/rewards/', [RewardController::class, 'index'])->name('rewards');
 

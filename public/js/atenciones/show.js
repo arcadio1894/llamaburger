@@ -69,6 +69,8 @@
     }
 
     function renderOrder(){
+        const editable = canEditComandaLocally();
+
         var html = ORDER.items.map(function(it){
             var opts = summarizeOptions(it.opciones);
             return ''
@@ -111,6 +113,8 @@
         $('#fab-count').text(ORDER.items.reduce(function(s,it){ return s+it.qty; },0));
 
         sizeOrderAsideBody(); // recalcular alto del área scrolleable
+        toggleItemControlsDisabled(!editable);
+
     }
 
     // ---------- Hidratar desde servidor ----------
@@ -212,6 +216,53 @@
         $('#ord-total, #a-total').text(formatMoney(t.total));
     }
 
+    function canAddLocally() {
+        return window.COMANDA_ESTADO === 'borrador';
+    }
+    function canEditComandaLocally() {
+        return window.COMANDA_ESTADO === 'borrador';
+    }
+
+    async function fetchEstadoComanda() {
+        try {
+            const res = await $.getJSON(routeComandaEstado(window.COMANDA_ID));
+            if (res?.ok) {
+                window.COMANDA_ESTADO = res.estado; // sincroniza cache local
+                return res.can_add === true;
+            }
+        } catch(e) { /* noop */ }
+        return false;
+    }
+
+    function routeComandaEstado(id) {
+        // Si tienes Ziggy, usa route('comandas.estado', id)
+        return `/comandas/${id}/estado`;
+    }
+
+    async function ensureCanAdd() {
+        // 1) chequeo rápido local
+        if (canAddLocally()) return true;
+
+        // 2) revalidación por AJAX por si cambió a borrador (raro, pero seguro)
+        const can = await fetchEstadoComanda();
+        return can;
+    }
+
+    async function revalidateComandaEditable() {
+        try {
+            const res = await $.getJSON(routeComandaEstado(window.COMANDA_ID));
+            if (res?.ok) {
+                window.COMANDA_ESTADO = res.estado;
+                return res.can_add === true; // true si 'borrador'
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    function toggleItemControlsDisabled(disabled) {
+        // adapta los selectores a tus botones +/−
+        $('.btn-inc, .btn-dec').prop('disabled', disabled).toggleClass('disabled', disabled);
+    }
     // ---------- Acciones del pedido ----------
     // (local helper no persistente)
     function addToOrderLocal(product){
@@ -288,13 +339,28 @@
     }
 
     // +/- (expuesta globalmente para los botones renderizados)
-    window.incItem = function(productId, d, serverId){
+    window.incItem = async function(productId, d, serverId){
         if (!serverId) { toastr.warning('Item no persistido aún.'); return; }
 
-        $.post('/dashboard/comanda-items/' + serverId + '/inc', { delta: d }, function(res){
-            if(!res || !res.ok){ toastr.error(res && res.msg ? res.msg : 'No se pudo actualizar'); return; }
+        // Bloqueo local
+        if (!canEditComandaLocally()) {
+            // Revalidar por AJAX por si la vista está desactualizada
+            const ok = await revalidateComandaEditable();
+            toggleItemControlsDisabled(!ok);
+            if (!ok) { toastr.error('La comanda ya no está en borrador.'); return; }
+        }
 
-            var idx = ORDER.items.findIndex(function(x){ return String(x.server_id) === String(serverId); });
+        $.post(`/dashboard/comanda-items/${serverId}/inc`, { delta: d }, function(res){
+            if(!res || !res.ok){
+                toastr.error(res && res.msg ? res.msg : 'No se pudo actualizar');
+                // Si el backend devolvió 422 por estado, deshabilita UI
+                if (res && res.msg) {
+                    revalidateComandaEditable().then(ok => toggleItemControlsDisabled(!ok));
+                }
+                return;
+            }
+
+            var idx = ORDER.items.findIndex(x => String(x.server_id) === String(serverId));
             if (idx === -1) return;
 
             if (res.removed) {
@@ -305,7 +371,14 @@
 
             renderOrder();
             syncTotals(res.totals);
-        }, 'json').fail(function(){ toastr.error('Error al cambiar cantidad'); });
+        }, 'json').fail(function(xhr){
+            const msg = xhr.responseJSON?.msg || 'Error al cambiar cantidad';
+            toastr.error(msg);
+            // En caso 422, bloquear controles
+            if (xhr.status === 422) {
+                revalidateComandaEditable().then(ok => toggleItemControlsDisabled(!ok));
+            }
+        });
     };
 
     // ====== MODAL: helpers ====== // NEW
@@ -525,9 +598,17 @@
         }).catch(function(){ toastr.error('No se pudieron cargar opciones'); });
     }
 
+    function refreshProductsInteractivity() {
+        const disabled = window.COMANDA_ESTADO !== 'borrador';
+        $('.product-card').toggleClass('disabled', disabled).css('pointer-events', disabled ? 'none' : 'auto');
+        // también puedes mostrar una banda/label en la UI
+    }
+
+    $(document).ready(refreshProductsInteractivity);
+
     // ---------- Listeners ----------
     $(document).ready(function () {
-
+        toggleItemControlsDisabled(window.COMANDA_ESTADO !== 'borrador');
         // CSRF para todos los AJAX
         $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
@@ -581,12 +662,18 @@
         $('#btn-clear-search').on('click', function(){ $('#prod-search').val(''); QUERY=''; renderFiltered(); });
 
         // Click agregar producto
-        $(document).on('click', '.product-card', function(){
-            var id    = parseInt(this.dataset.id, 10);
-            var name  = this.dataset.name || 'Producto';
-            var price = parseFloat(this.dataset.price);
-            var hasOpt = this.dataset.hasOptions === '1';
-            var prod = { id:id, name:name, unit_price: (isNaN(price) ? 0 : price), has_options: hasOpt };
+        $(document).on('click', '.product-card', async function(){
+            const id     = parseInt(this.dataset.id, 10);
+            const name   = this.dataset.name || 'Producto';
+            const price  = parseFloat(this.dataset.price);
+            const hasOpt = this.dataset.hasOptions === '1';
+            const prod   = { id, name, unit_price: (isNaN(price) ? 0 : price), has_options: hasOpt };
+
+            const allowed = await ensureCanAdd();
+            if (!allowed) {
+                toastr.error('No puedes agregar productos: la comanda ya no está en borrador.');
+                return;
+            }
 
             if (hasOpt) {
                 openOptionsModalForNew(prod);

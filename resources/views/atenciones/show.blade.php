@@ -436,6 +436,7 @@
         window.ATENCION_ID   = {{ $atencion->id }};
         window.COMANDA_ID    = {{ $comanda->id }};
         window.COMANDA_NUM   = {{ $comanda->numero }};
+        window.COMANDA_ESTADO  = @json($comanda->estado);
         window.COMANDA_ITEMS = @json($itemsPayload);
         window.COMANDA_TOTALS= @json($totalsPayload);
     </script>

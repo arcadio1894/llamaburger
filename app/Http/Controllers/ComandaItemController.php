@@ -127,11 +127,20 @@ class ComandaItemController extends Controller
     {
         $this->authorizeComanda($comanda);
 
+        // 1) Guard cláusula: solo permitir si está en borrador
+        if ($comanda->estado !== 'borrador') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'No puedes agregar productos: la comanda ya no está en borrador.'
+            ], 422);
+        }
+
         $data = $request->validate([
             'product_id' => ['required','integer','exists:products,id'],
             'cantidad'   => ['nullable','integer','min:1'],
             'opciones'   => ['nullable','string'], // JSON snapshot
         ]);
+
         $qty      = max(1, (int) ($data['cantidad'] ?? 1));
         $snapshot = $this->decodeSnapshot($data['opciones'] ?? null);
 
@@ -140,31 +149,38 @@ class ComandaItemController extends Controller
 
             DB::transaction(function () use (&$payload, $comanda, $data, $qty, $snapshot) {
 
+                // 2) Re-validar bajo lock para evitar race conditions
+                $comandaLocked = Comanda::whereKey($comanda->id)->lockForUpdate()->first();
+                if ($comandaLocked->estado !== 'borrador') {
+                    throw new \RuntimeException('LOCKED_NOT_DRAFT');
+                }
+
                 $product = Product::findOrFail($data['product_id']);
                 $precio  = $this->calcularPrecioUnit($product, $snapshot);
 
                 if ($snapshot) {
-                    // Con opciones → SIEMPRE crear nueva línea
+                    // Con opciones → siempre nueva línea
                     $item = ComandaItem::create([
-                        'comanda_id'  => $comanda->id,
+                        'comanda_id'  => $comandaLocked->id,
                         'product_id'  => $product->id,
                         'nombre'      => $product->full_name ?? $product->name ?? ('Prod '.$product->id),
                         'precio_unit' => $precio,
                         'cantidad'    => $qty,
                         'estado'      => 'pendiente',
-                        'opciones'    => $snapshot, // se castea a json en el modelo
+                        'opciones'    => $snapshot,
                     ]);
                 } else {
-                    // Sin opciones → agrupar por product_id como antes
-                    $item = $comanda->items()->where('product_id', $product->id)
-                        ->whereNull('opciones') // solo agrupo con ítems SIN opciones
+                    // Sin opciones → agrupar por product_id SIN opciones
+                    $item = $comandaLocked->items()
+                        ->where('product_id', $product->id)
+                        ->whereNull('opciones')
                         ->first();
 
                     if ($item) {
                         $item->update(['cantidad' => $item->cantidad + $qty]);
                     } else {
                         $item = ComandaItem::create([
-                            'comanda_id'  => $comanda->id,
+                            'comanda_id'  => $comandaLocked->id,
                             'product_id'  => $product->id,
                             'nombre'      => $product->full_name ?? $product->name ?? ('Prod '.$product->id),
                             'precio_unit' => $precio,
@@ -175,7 +191,7 @@ class ComandaItemController extends Controller
                     }
                 }
 
-                $totals = $this->recalc($comanda);
+                $totals = $this->recalc($comandaLocked);
 
                 $payload = [
                     'ok'     => true,
@@ -187,6 +203,12 @@ class ComandaItemController extends Controller
             return response()->json($payload, 201);
 
         } catch (\Throwable $e) {
+            if ($e instanceof \RuntimeException && $e->getMessage() === 'LOCKED_NOT_DRAFT') {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'No puedes agregar productos: la comanda fue enviada a cocina.'
+                ], 422);
+            }
             report($e);
             return response()->json(['ok'=>false,'msg'=>'No se pudo agregar el producto.'], 500);
         }
@@ -245,9 +267,17 @@ class ComandaItemController extends Controller
     // ===== POST /comanda-items/{item}/inc  (delta +1 / -1)
     public function increment(Request $request, ComandaItem $item)
     {
-        // asegurar acceso
+        // traer comanda y atencion
         $comanda = $item->comanda()->with('atencion')->firstOrFail();
         $this->authorizeComanda($comanda);
+
+        // 🚫 Guard inmediato
+        if ($comanda->estado !== 'borrador') {
+            return response()->json([
+                'ok' => false,
+                'msg' => 'No puedes modificar ítems: la comanda ya no está en borrador.'
+            ], 422);
+        }
 
         $data = $request->validate([
             'delta' => ['required','integer','in:-1,1'],
@@ -257,22 +287,32 @@ class ComandaItemController extends Controller
             $resp = null;
 
             DB::transaction(function () use (&$resp, $item, $comanda, $data) {
-                $newQty = $item->cantidad + $data['delta'];
+
+                // 🔐 Revalidar bajo lock para evitar race condition
+                $comandaLocked = Comanda::whereKey($comanda->id)->lockForUpdate()->first();
+                if ($comandaLocked->estado !== 'borrador') {
+                    throw new \RuntimeException('NOT_DRAFT');
+                }
+
+                // (Opcional) bloquear también el item
+                $itemLocked = ComandaItem::whereKey($item->id)->lockForUpdate()->firstOrFail();
+
+                $newQty = $itemLocked->cantidad + $data['delta'];
 
                 if ($newQty <= 0) {
-                    $item->delete();
+                    $itemLocked->delete();
                     $removed = true;
                 } else {
-                    $item->update(['cantidad' => $newQty]);
+                    $itemLocked->update(['cantidad' => $newQty]);
                     $removed = false;
                 }
 
-                $totals = $this->recalc($comanda);
+                $totals = $this->recalc($comandaLocked);
 
                 $resp = [
                     'ok'      => true,
                     'removed' => $removed,
-                    'qty'     => $removed ? 0 : (int)$item->cantidad,
+                    'qty'     => $removed ? 0 : (int)$itemLocked->cantidad,
                     'totals'  => $totals,
                 ];
             });
@@ -280,6 +320,12 @@ class ComandaItemController extends Controller
             return response()->json($resp, 200);
 
         } catch (\Throwable $e) {
+            if ($e instanceof \RuntimeException && $e->getMessage() === 'NOT_DRAFT') {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'No puedes modificar ítems: la comanda fue enviada a cocina.'
+                ], 422);
+            }
             report($e);
             return response()->json(['ok'=>false,'msg'=>'No se pudo actualizar el item.'], 500);
         }
