@@ -976,6 +976,10 @@
 </script>
 
 @yield('scripts')
+{{-- expón el ID del usuario autenticado para el listener --}}
+<script>window.USER_ID = {{ auth()->id() ?? 'null' }};</script>
 
+{{-- incluye el asset compilado --}}
+<script src="{{ mix('js/mozo-ready-listener.js') }}"></script>
 </body>
 </html>

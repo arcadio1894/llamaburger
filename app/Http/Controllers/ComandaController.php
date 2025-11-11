@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\ComandaCreated;
+use App\Events\ComandaReadyForPickup;
 use App\Events\ComandaStatusUpdated;
 use App\Models\Atencion;
 use App\Models\Comanda;
@@ -183,17 +184,23 @@ class ComandaController extends Controller
     public function ready(Comanda $comanda)
     {
         $comanda->update([
-            'estado'   => 'lista',                              // Kanban → "Listo"
+            'estado'   => 'lista',
             'ready_at' => Carbon::now('America/Lima'),
         ]);
 
-        // 🔔 Emitir evento para repintar en el Kanban (mismo canal que .comanda.created)
+        // sigue tu evento general
         broadcast(new ComandaStatusUpdated($comanda));
 
+        // evento dirigido al mozo
+        $mozoId = optional($comanda->atencion)->mozo_id; // <— aquí
+        if ($mozoId) {
+            broadcast(new ComandaReadyForPickup($comanda, $mozoId));
+        }
+
         return response()->json([
-            'ok' => true,
-            'id' => $comanda->id,
-            'estado' => $comanda->estado,
+            'ok'       => true,
+            'id'       => $comanda->id,
+            'estado'   => $comanda->estado,
             'ready_at' => optional($comanda->ready_at)->toDateTimeString(),
         ]);
     }

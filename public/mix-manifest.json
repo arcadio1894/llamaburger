@@ -3,5 +3,6 @@
     "/js/orderCreated.js": "/js/orderCreated.js?id=6076626bf3d36335c3bf451f25b2659e",
     "/js/comandaCreated.js": "/js/comandaCreated.js?id=22033ef50414ff8e2de8b6fcf818341e",
     "/js/dashboardPusher.js": "/js/dashboardPusher.js?id=c3af841061a264bf7bb2e1eae0552e05",
-    "/js/indexDistributor.js": "/js/indexDistributor.js?id=299da084d0d4ec8686f11a388ecff785"
+    "/js/indexDistributor.js": "/js/indexDistributor.js?id=299da084d0d4ec8686f11a388ecff785",
+    "/js/mozo-ready-listener.js": "/js/mozo-ready-listener.js?id=4527e02cc09a2efcc980ff61bf825851"
 }

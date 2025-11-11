@@ -567,9 +567,10 @@ $(document).ready(function () {
 
     $(document).on("comanda:entregada", function (e, comandaId) {
         // Buscar tanto comanda_5 como 5 por seguridad
-        const $card = $(`[data-comanda-entregar='${comandaId}'], [data-comanda-entregar='comanda_${comandaId}']`).closest(".card");
-        if ($card.length) {
-            $card.fadeOut(400, function () { $(this).remove(); });
+        const $section = $(`[data-comanda-entregar='${comandaId}'], [data-comanda-entregar='comanda_${comandaId}']`)
+            .closest('section.content');
+        if ($section.length) {
+            $section.fadeOut(400, function () { $(this).remove(); });
         }
     });
 });

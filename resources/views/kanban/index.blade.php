@@ -176,6 +176,7 @@
             warn: {{ $warn }},
             danger: {{ $danger }}
         };
+        window.IS_KANBAN_PAGE = true;
     </script>
 @endsection
 
