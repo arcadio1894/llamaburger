@@ -878,5 +878,22 @@
 
     $(window).on('resize', sizePOModal);
 
+    function reactivateComanda(comandaId) {
+        $.post(`/dashboard/comandas/${comandaId}/reactivate`, {_token: $('meta[name="csrf-token"]').attr('content')}, function(res){
+            if(!res || !res.ok){
+                toastr.error(res && res.msg ? res.msg : 'No se pudo reactivar la comanda.');
+                return;
+            }
+            toastr.success('Comanda reactivada.');
+            // Recarga para que se habilite nuevamente la UI (botones, productos, etc.)
+            window.location.reload();
+        }, 'json').fail(function(xhr){
+            toastr.error(xhr.responseJSON?.msg || 'Error al reactivar la comanda.');
+        });
+    }
 
+    $(document).on('click', '#btn-reactivar-web, #btn-reactivar-movil', function (e) {
+        e.preventDefault();
+        reactivateComanda(window.COMANDA_ID);
+    });
 })(jQuery);

@@ -593,6 +593,9 @@ Route::middleware('auth')->group(function (){
         Route::get('/atenciones/{atencion}/comanda/{numero}', [AtencionController::class, 'showComanda'])
             ->name('atenciones.comanda.show');
 
+        Route::post('/comandas/{comanda}/cancel',     [ComandaController::class, 'cancel'])->name('comandas.cancel');
+        Route::post('/comandas/{comanda}/reactivate', [ComandaController::class, 'reactivate'])->name('comandas.reactivate');
+
         // Crear una nueva comanda (siguiente número) dentro de la atención
         Route::post('/atenciones/{atencion}/comandas', [ComandaController::class, 'createNext'])
             ->name('comandas.createNext');

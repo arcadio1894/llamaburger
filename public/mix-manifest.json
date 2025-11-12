@@ -1,8 +1,9 @@
 {
     "/js/orderPusher.js": "/js/orderPusher.js?id=d51539954ba6a120c518f52abd7b07a3",
     "/js/orderCreated.js": "/js/orderCreated.js?id=6076626bf3d36335c3bf451f25b2659e",
-    "/js/comandaCreated.js": "/js/comandaCreated.js?id=22033ef50414ff8e2de8b6fcf818341e",
+    "/js/comandaCreated.js": "/js/comandaCreated.js?id=33e523d012c5433f7e40a5b1a200e241",
     "/js/dashboardPusher.js": "/js/dashboardPusher.js?id=c3af841061a264bf7bb2e1eae0552e05",
     "/js/indexDistributor.js": "/js/indexDistributor.js?id=299da084d0d4ec8686f11a388ecff785",
-    "/js/mozo-ready-listener.js": "/js/mozo-ready-listener.js?id=4527e02cc09a2efcc980ff61bf825851"
+    "/js/mozo-ready-listener.js": "/js/mozo-ready-listener.js?id=3e37f4182bf0e06dc47dbb4b29460d83",
+    "/js/atencionesShow.js": "/js/atencionesShow.js?id=448648fa6a5b95a66ab1b5335c00c681"
 }

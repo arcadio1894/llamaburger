@@ -29,7 +29,7 @@ function getComandaCardCreated(t) {
             </div>
             <div class="col-sm-4">
               <div class="description-block">
-                <a href="#" data-anular data-id="${t.comanda_id}">
+                <a href="#" data-anular-comanda="${t.comanda_id}" data-id="${t.comanda_id}">
                   <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">CANCELAR</h6>
                 </a>
               </div>

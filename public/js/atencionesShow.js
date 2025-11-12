@@ -6420,39 +6420,58 @@ var __webpack_exports__ = {};
 // This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
 (() => {
 "use strict";
-/*!*********************************************!*\
-  !*** ./resources/js/mozo-ready-listener.js ***!
-  \*********************************************/
+/*!****************************************!*\
+  !*** ./resources/js/atencionesShow.js ***!
+  \****************************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var laravel_echo__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! laravel-echo */ "./node_modules/laravel-echo/dist/echo.js");
 /* harmony import */ var pusher_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! pusher-js */ "./node_modules/pusher-js/dist/web/pusher.js");
 /* harmony import */ var pusher_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(pusher_js__WEBPACK_IMPORTED_MODULE_1__);
 
 
-window.Pusher = (pusher_js__WEBPACK_IMPORTED_MODULE_1___default());
-window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
-  broadcaster: 'pusher',
-  key: 'dac24d98f58cf734beec',
-  // ← tu key
-  cluster: 'us2',
-  forceTLS: true,
-  encrypted: true
-});
-window.Echo.connector.pusher.connection.bind('connected', function () {
-  console.log('Conexión establecida con Pusher (mozo listener).');
-});
-document.addEventListener('DOMContentLoaded', function () {
-  var mozoId = window.MOZO_ID;
-  if (!mozoId) return;
-  var channelName = "mozos.".concat(mozoId);
-  window.Echo.channel(channelName).subscribed(function () {
-    return console.log("Suscrito al canal ".concat(channelName));
-  }).listen('.ComandaReadyForPickup', function (e) {
-    if (window.IS_KANBAN_PAGE) return;
-    var msg = "Comanda #".concat(e.numero).concat(e.mesa ? ' - ' + e.mesa : '', " lista para recojo en cocina.");
-    toastr.info(msg, '¡Listo para recojo!');
-  }).error(function (err) {
-    return console.error('Error escuchando canal mozo:', err);
+if (!window.Echo) {
+  window.Pusher = (pusher_js__WEBPACK_IMPORTED_MODULE_1___default());
+  window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
+    broadcaster: 'pusher',
+    key: 'dac24d98f58cf734beec',
+    // ← tu key
+    cluster: 'us2',
+    forceTLS: true,
+    encrypted: true
+  });
+}
+function disableEditionUI() {
+  window.COMANDA_ESTADO = 'cancelada';
+  // Deshabilita envío a cocina (web y móvil)
+  $('#a-send-kitchen').prop('disabled', true).addClass('disabled');
+
+  // Deshabilita sumar/restar y grid de productos por si siguen visibles
+  $('.btn-inc, .btn-dec, .product-card').prop('disabled', true).addClass('disabled').css('pointer-events', 'none');
+
+  // Inserta botón “Reactivar comanda” (web) si no existe
+  if (!$('#btn-reactivar-web').length) {
+    var $btnWeb = $('<button id="btn-reactivar-web" class="btn btn-outline-primary btn-block mt-2">Reactivar comanda</button>');
+    $('#order-panel .card-footer').append($btnWeb);
+  }
+
+  // Inserta botón “Reactivar comanda” (móvil) si no existe
+  if (!$('#btn-reactivar-movil').length) {
+    var $btnMov = $('<button id="btn-reactivar-movil" class="btn btn-outline-primary btn-block mt-2">Reactivar comanda</button>');
+    $('#order-aside-top').append($btnMov);
+  }
+}
+
+// Suscripción a este canal de comanda
+$(function () {
+  var comandaId = window.COMANDA_ID;
+  if (!comandaId) return;
+  window.Echo.channel("comandas.".concat(comandaId)).subscribed(function () {
+    return console.log("Suscrito a comandas.".concat(comandaId));
+  }).listen('.ComandaCanceled', function (e) {
+    // Solo aplica si estoy en la misma comanda
+    if (String(e.comandaId) !== String(window.COMANDA_ID)) return;
+    disableEditionUI();
+    if (window.toastr) toastr.info('Esta comanda fue cancelada.');
   });
 });
 })();

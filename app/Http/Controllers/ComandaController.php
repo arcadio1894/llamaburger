@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ComandaCanceled;
 use App\Events\ComandaCreated;
 use App\Events\ComandaReadyForPickup;
 use App\Events\ComandaStatusUpdated;
@@ -9,6 +10,7 @@ use App\Models\Atencion;
 use App\Models\Comanda;
 use App\Models\DataGeneral;
 use App\Models\Invoice;
+use App\Models\Mozo;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,19 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ComandaController extends Controller
 {
+    protected function authorizeComanda(Comanda $comanda)
+    {
+        if ( $comanda->tipo == "mesa" ) {
+            if (auth()->check()) {
+                $mozo = Mozo::where('user_id', auth()->id())->where('activo', 1)->first();
+                if ($mozo && $comanda->atencion->mozo_id !== $mozo->id) {
+                    abort(403, 'Acceso restringido.');
+                }
+            }
+        }
+
+    }
+
     public function getOrCreateBorrador(Request $request, Atencion $atencion)
     {
         // podrías validar permisos del mozo aquí
@@ -263,5 +278,55 @@ class ComandaController extends Controller
         // Descarga o muestra en navegador
         return $pdf->stream("ticket-venta-{$invoice->id}.pdf");
         // return $pdf->stream();
+    }
+
+    public function cancel(Request $request, Comanda $comanda)
+    {
+        $this->authorizeComanda($comanda);
+
+        if ($comanda->estado === 'cancelada') {
+            return response()->json(['ok' => true, 'id' => $comanda->id, 'estado' => 'cancelada']);
+        }
+
+        if ($comanda->estado === 'servida') {
+            return response()->json(['ok' => false, 'msg' => 'No puedes cancelar una comanda servida.'], 422);
+        }
+
+        DB::transaction(function () use ($comanda) {
+            $comanda->update(['estado' => 'cancelada']);
+
+            $comanda->update([
+                'sent_to_kitchen_at' => null,
+                'started_cooking_at' => null,
+                'estimated_ready_at' => null,
+                'ready_at'           => null,
+                'delivered_at'       => null,
+            ]);
+
+            // ✅ Solo notificamos a la vista show de esta comanda
+            broadcast(new ComandaCanceled($comanda));
+        });
+
+        return response()->json(['ok' => true, 'id' => $comanda->id, 'estado' => 'cancelada']);
+    }
+
+    public function reactivate(Request $request, Comanda $comanda)
+    {
+        $this->authorizeComanda($comanda);
+
+        // Solo reactivar si está cancelada
+        if ($comanda->estado !== 'cancelada') {
+            return response()->json(['ok' => false, 'msg' => 'Solo puedes reactivar una comanda cancelada.'], 422);
+        }
+
+        DB::transaction(function () use ($comanda) {
+            $comanda->update([
+                'estado' => 'borrador',
+            ]);
+            // Broadcast para que Kanban/otras vistas se actualicen
+            broadcast(new \App\Events\ComandaStatusUpdated($comanda));
+        });
+
+        return response()->json(['ok' => true, 'id' => $comanda->id, 'estado' => 'borrador']);
     }
 }

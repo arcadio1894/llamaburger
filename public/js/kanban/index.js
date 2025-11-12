@@ -568,9 +568,52 @@ $(document).ready(function () {
     $(document).on("comanda:entregada", function (e, comandaId) {
         // Buscar tanto comanda_5 como 5 por seguridad
         const $section = $(`[data-comanda-entregar='${comandaId}'], [data-comanda-entregar='comanda_${comandaId}']`)
-            .closest('section.content');
+            .closest('.jqx-kanban-item');
         if ($section.length) {
             $section.fadeOut(400, function () { $(this).remove(); });
+        }
+    });
+
+    $(document).on('click', '[data-anular-comanda]', function (e) {
+        e.preventDefault();
+        const comandaId = this.dataset.id;
+
+        const doCancel = () => {
+            $.post(`/dashboard/comandas/${comandaId}/cancel`, {_token: $('meta[name="csrf-token"]').attr('content')}, function(res){
+                if(!res || !res.ok){
+                    toastr.error(res && res.msg ? res.msg : 'No se pudo cancelar la comanda.');
+                    return;
+                }
+                // Quitar del Kanban: si cada comanda está dentro de <section class="content"> …
+                const $section = $(`[data-anular-comanda='${comandaId}'], [data-anular-comanda='comanda_${comandaId}']`)
+                    .closest('.jqx-kanban-item');
+                if ($section.length) {
+                    $section.fadeOut(300, function(){ $(this).remove(); });
+                } else {
+                    // fallback: remover solo la card
+                    $(`[data-anular-comanda='${comandaId}'], [data-anular-comanda='comanda_${comandaId}']`)
+                        .closest('.card')
+                        .fadeOut(300, function(){ $(this).remove(); });
+                }
+
+                toastr.info('Comanda cancelada.');
+            }, 'json').fail(function(xhr){
+                toastr.error(xhr.responseJSON?.msg || 'Error al cancelar la comanda.');
+            });
+        };
+
+        // jQuery Confirm (si lo tienes). Si no, usa window.confirm
+        if ($.confirm) {
+            $.confirm({
+                title: 'Confirmar',
+                content: '¿Seguro que deseas cancelar esta comanda?',
+                buttons: {
+                    cancelar: function(){},
+                    aceptar: function(){ doCancel(); }
+                }
+            });
+        } else {
+            if (confirm('¿Seguro que deseas cancelar esta comanda?')) doCancel();
         }
     });
 });
@@ -1235,7 +1278,7 @@ function getComandaCardCreated(t) {
           </div>
           <div class="col-sm-4">
             <div class="description-block">
-              <a href="#" data-anular data-id="${t.comanda_id}">
+              <a href="#" data-anular-comanda="${t.comanda_id}" data-id="${t.comanda_id}">
                 <h6 class="description-header" style="font-size:.65rem;font-weight:bold;color:black">CANCELAR</h6>
               </a>
             </div>

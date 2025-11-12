@@ -1,6 +1,6 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import toastr from 'toastr';
+
 
 window.Pusher = Pusher;
 
