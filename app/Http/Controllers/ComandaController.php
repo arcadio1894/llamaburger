@@ -208,8 +208,9 @@ class ComandaController extends Controller
 
         // evento dirigido al mozo
         $mozoId = optional($comanda->atencion)->mozo_id; // <— aquí
+        $mozo = Mozo::find($mozoId);
         if ($mozoId) {
-            broadcast(new ComandaReadyForPickup($comanda, $mozoId));
+            broadcast(new ComandaReadyForPickup($comanda, $mozo->user_id));
         }
 
         return response()->json([

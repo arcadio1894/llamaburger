@@ -6442,7 +6442,7 @@ window.Echo.connector.pusher.connection.bind('connected', function () {
   console.log('Conexión establecida con Pusher (mozo listener).');
 });
 document.addEventListener('DOMContentLoaded', function () {
-  var mozoId = window.MOZO_ID;
+  var mozoId = window.USER_ID;
   if (!mozoId) return;
   var channelName = "mozos.".concat(mozoId);
   window.Echo.channel(channelName).subscribed(function () {
@@ -6451,6 +6451,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.IS_KANBAN_PAGE) return;
     var msg = "Comanda #".concat(e.numero).concat(e.mesa ? ' - ' + e.mesa : '', " lista para recojo en cocina.");
     toastr.info(msg, '¡Listo para recojo!');
+    console.log(msg);
   }).error(function (err) {
     return console.error('Error escuchando canal mozo:', err);
   });

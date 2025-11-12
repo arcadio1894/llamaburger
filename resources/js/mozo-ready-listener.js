@@ -17,7 +17,7 @@ window.Echo.connector.pusher.connection.bind('connected', function() {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    const mozoId = window.MOZO_ID;
+    const mozoId = window.USER_ID;
     if (!mozoId) return;
 
     const channelName = `mozos.${mozoId}`;
@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.IS_KANBAN_PAGE) return;
             const msg = `Comanda #${e.numero}${e.mesa ? ' - ' + e.mesa : ''} lista para recojo en cocina.`;
             toastr.info(msg, '¡Listo para recojo!');
+            console.log(msg);
         })
         .error(err => console.error('Error escuchando canal mozo:', err));
 });
