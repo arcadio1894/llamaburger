@@ -15,8 +15,8 @@ class CreateComandaItemLiquidacionesTable extends Migration
     {
         Schema::create('comanda_item_liquidaciones', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('comanda_item_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('comanda_item_id')->constrained('comanda_items')->cascadeOnDelete();
+            $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
             $table->integer('qty');
             $table->decimal('monto', 12, 2)->default(0); // opcional
             $table->timestamps();

@@ -14,7 +14,7 @@ class AddComandaItemIdToInvoiceItemsTable extends Migration
     public function up()
     {
         Schema::table('invoice_items', function (Blueprint $table) {
-            $table->foreignId('comanda_item_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('comanda_item_id')->nullable()->constrained('comanda_items')->nullOnDelete();
         });
     }
 

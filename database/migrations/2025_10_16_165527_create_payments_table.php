@@ -16,8 +16,8 @@ class CreatePaymentsTable extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('atencion_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('invoice_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('atencion_id')->nullable()->constrained('atenciones')->nullOnDelete();
+            $table->foreignId('invoice_id')->nullable()->constrained('invoices')->nullOnDelete();
 
             $table->enum('metodo', ['efectivo','tarjeta','yape','plin','transferencia','mixto','otro'])->default('efectivo');
             $table->decimal('monto', 12, 2);
@@ -30,7 +30,7 @@ class CreatePaymentsTable extends Migration
             $table->string('referencia', 100)->nullable(); // código operación, últimos 4 tarjeta, etc.
             $table->enum('estado', ['aplicado','anulado'])->default('aplicado');
             $table->timestamp('paid_at')->useCurrent();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
 
             $table->json('extra')->nullable();
 
