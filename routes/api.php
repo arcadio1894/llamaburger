@@ -56,4 +56,8 @@ Route::prefix('kitchen/comandas')->group(function () {
     Route::post('{comanda}/start',   [ComandaController::class, 'start']);   // pide minutos
     Route::post('{comanda}/ready',   [ComandaController::class, 'ready']);
     Route::post('{comanda}/deliver', [ComandaController::class, 'deliver']);
+
+    Route::get('{comanda}/get-data-comanda', [ComandaController::class, 'getDataComanda']);
 });
+
+// api/kitchen/comandas/27/get-data-comanda

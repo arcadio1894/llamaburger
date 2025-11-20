@@ -2,7 +2,9 @@
 
 namespace App\Events;
 
+use App\Models\Agent;
 use App\Models\Comanda;
+use App\Models\Tenant;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -39,6 +41,10 @@ class ComandaCreated implements ShouldBroadcastNow
 
     public function broadcastWith()
     {
+        $tenantCurrent = env('TENANT_ID');
+        $tenant = Tenant::where('name', $tenantCurrent)->first();
+        $agent = Agent::where('tenant_id', $tenant->id)->first();
+
         return [
             'ticket' => [
                 'id'          => $this->kanban_id,             // ej. "comanda_57"
@@ -50,6 +56,9 @@ class ComandaCreated implements ShouldBroadcastNow
                 'status'      => 'created',                    // columna inicial: Recibido
                 'total'       => (float) $this->comanda->total,
                 'items'       => $this->comanda->items()->count(),
+
+                'tenant'      => $tenant->name,
+                'agent'       => $agent->name
             ],
         ];
     }

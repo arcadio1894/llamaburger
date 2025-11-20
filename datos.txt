@@ -3,3 +3,5 @@ php artisan db:seed --class=PermissionSeeder
 
 
 php artisan db:seed --class=InvoiceCountersSeeder
+
+php artisan db:seed --class=DataAgentAdnTenantSeeder

@@ -809,3 +809,4 @@ Route::get('/check/sales/vs/movements', [OrdersChartController::class, 'getRegul
 
 Route::get('/generate/recibo/prueba', [NubeFactController::class, 'generarRecibo']);
 
+Route::get('/kitchen/comandas/{comanda}/get-data-comanda', [ComandaController::class, 'getDataComanda']);

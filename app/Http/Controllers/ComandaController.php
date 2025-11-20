@@ -6,15 +6,20 @@ use App\Events\ComandaCanceled;
 use App\Events\ComandaCreated;
 use App\Events\ComandaReadyForPickup;
 use App\Events\ComandaStatusUpdated;
+use App\Models\Agent;
 use App\Models\Atencion;
 use App\Models\Comanda;
 use App\Models\DataGeneral;
 use App\Models\Invoice;
 use App\Models\Mozo;
+use App\Models\PrintJob;
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
+
 
 class ComandaController extends Controller
 {
@@ -83,8 +88,12 @@ class ComandaController extends Controller
 
     public function send(Request $request, Comanda $comanda)
     {
+        $tenantCurrent = env('TENANT_ID');
+        $tenant = Tenant::where('name', $tenantCurrent)->first();
+        $agent = Agent::where('tenant_id', $tenant->id)->first();
+
         // No reenviar si ya fue enviada
-        if (in_array($comanda->estado, ['enviada','cocinando','servida'])) {
+        if (in_array($comanda->estado, ['enviada','cocinando','servida', 'lista', 'cancelada'])) {
             return response()->json([
                 'ok' => false,
                 'msg' => 'Esta comanda ya fue enviada a cocina.'
@@ -95,6 +104,16 @@ class ComandaController extends Controller
         $comanda->update([
             'estado' => 'enviada',            // si usas un campo; si no, omite
             'sent_to_kitchen_at' => now(),    // si lo tienes; si no, omite
+        ]);
+
+        $job = PrintJob::create([
+            'id'           => (string) Str::uuid(),
+            'tenant_id'    => $tenant->id,
+            'agent_id'     => $agent->id,
+            'comanda_id'   => $comanda->id,
+            'printer_name' => $agent->name,
+            'content'      => "",  // {header, lines, cut:true}
+            'status'       => 'queued',
         ]);
 
         broadcast(new ComandaCreated($comanda));
@@ -329,5 +348,104 @@ class ComandaController extends Controller
         });
 
         return response()->json(['ok' => true, 'id' => $comanda->id, 'estado' => 'borrador']);
+    }
+
+    public function getDataComanda($comanda_id, Request $request)
+    {
+        $comanda = Comanda::with('items')->find($comanda_id);
+
+        $authHeader     = $request->header('Authorization'); // "Bearer xxx"
+        $tenantId       = $request->header('X-Tenant-Id');
+        $agentId        = $request->header('X-Agent-Id');
+
+        $orden = $request->orden; // "print_comanda", "etc"
+        //$orden = "print_comanda";
+
+        if (!$authHeader || !str_contains($authHeader, 'Bearer ')) {
+            return response()->json(['message' => 'No autorizado'], 401);
+        }
+
+        $token = trim(str_replace('Bearer ', '', $authHeader));
+
+        if ($token !== env('API_PRINT_AGENT_TOKEN')) {
+            return response()->json(['message' => 'Token inválido'], 401);
+        }
+
+        if (!$authHeader || !$tenantId || !$agentId) {
+            return response()->json(['ok'=>false,'msg'=>'Unauthorized'], 401);
+        }
+
+        if ( $orden == "print_comanda" )
+        {
+            // Toma el primero en cola para ese agente
+            $job = PrintJob::where('tenant_id', $tenantId)
+                ->where('agent_id', $agentId)
+                ->where('comanda_id', $comanda_id)
+                ->where('status', 'queued')
+                ->orderBy('created_at')
+                ->first();
+
+            if (!$job) return response()->noContent(); // 204
+
+            //Marcarlo "taken" para que no lo tome otro
+            $job->status = 'taken';
+            $job->save();
+
+            $items = $comanda->items->map(function ($detail) {
+                // Reutilizamos la lógica de opciones
+                $ops = is_array($detail->opciones)
+                    ? $detail->opciones
+                    : (json_decode($detail->opciones ?? '[]', true) ?: []);
+
+                $grupos = $ops['grupos'] ?? [];
+
+                $groups = collect($grupos)->map(function ($grupo) use ($detail) {
+                    //$description = $grupo['descripcion'] ?? null;
+
+                    $selections = collect($grupo['selecciones'] ?? [])->map(function ($sel) use ($detail) {
+                        $label = $sel['name'] ?? $sel['nombre'] ?? '—';
+
+                        return [
+                            'label' => $label,
+                            'qty'   => (float) $detail->cantidad, // mismo multiplicador que en la vista
+                        ];
+                    })->values()->all();
+
+                    return [
+                        //'description' => $description,
+                        'selections'  => $selections,
+                    ];
+                })->values()->all();
+
+                return [
+                    'name'   => $detail->nombre,
+                    'qty'    => (float) $detail->cantidad,
+                    'groups' => $groups,
+                ];
+            })->values()->all();
+
+            /*dump($items);
+            dd();*/
+
+            return response()->json([
+                'id'                    => $comanda->id,
+                'numero'                => $comanda->numero,
+                'mesa'                  => optional($comanda->atencion->mesa)->nombre,
+                'mozo'                  => optional($comanda->atencion->mozo)->nombre,
+                'total'                 => $comanda->total,
+                'status'                => $this->mapComandaToKanban($comanda->estado),
+                'send_to_kitchen_at'    => $comanda->formatted_send_to_kitchen,
+                'started_cooking_at'    => $comanda->formatted_started_cooking,
+                'estimated_ready_at'    => $comanda->formatted_estimated_ready,
+                'items'                 => $items,
+                'job_id'                => $job->id,
+                'tenant_id'             => $job->tenant_id,
+                'agent_id'              => $job->agent_id,
+                'printer_name'          => $job->printer_name,
+                'content'               => $job->content,
+            ]);
+        }
+
+        return -1;
     }
 }
