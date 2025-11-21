@@ -366,8 +366,9 @@ class ComandaController extends Controller
         }
 
         $token = trim(str_replace('Bearer ', '', $authHeader));
+        $serverToken = trim(config('services.print_agent_token'));
 
-        if ($token !== env('API_PRINT_AGENT_TOKEN')) {
+        if ($token !== $serverToken) {
             return response()->json(['message' => 'Token inválido'], 401);
         }
 

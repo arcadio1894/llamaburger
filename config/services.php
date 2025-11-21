@@ -39,4 +39,6 @@ return [
         'secret_key' => env('SECRET_KEY'),
     ],
 
+    'print_agent_token' => env('API_PRINT_AGENT_TOKEN'),
+
 ];
