@@ -395,7 +395,7 @@ class ComandaController extends Controller
             // Toma el primero en cola para ese agente
             $job = PrintJob::where('tenant_id', $tenant->id)
                 ->where('agent_id', $agent->id)
-                ->where('comanda_id', $comanda->id)
+                ->where('comanda_id', $comanda_id)
                 ->where('status', 'queued')
                 ->orderBy('created_at')
                 ->first();
