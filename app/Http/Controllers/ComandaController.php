@@ -377,9 +377,13 @@ class ComandaController extends Controller
 
         if ( $orden == "print_comanda" )
         {
+
+            $tenant = Tenant::where('name', $tenantId)->first();
+            $agent = Agent::where('name', $agentId)->first();
+
             // Toma el primero en cola para ese agente
-            $job = PrintJob::where('tenant_id', $tenantId)
-                ->where('agent_id', $agentId)
+            $job = PrintJob::where('tenant_id', $tenant->id)
+                ->where('agent_id', $agent->id)
                 ->where('comanda_id', $comanda_id)
                 ->where('status', 'queued')
                 ->orderBy('created_at')
