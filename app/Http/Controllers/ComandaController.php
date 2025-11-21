@@ -350,9 +350,9 @@ class ComandaController extends Controller
         return response()->json(['ok' => true, 'id' => $comanda->id, 'estado' => 'borrador']);
     }
 
-    public function getDataComanda($comanda_id, Request $request)
+    public function getDataComanda(Request $request)
     {
-        $comanda = Comanda::with('items')->find($comanda_id);
+        $comanda_id = $request->get('comanda_id');
 
         $authHeader     = $request->header('Authorization'); // "Bearer xxx"
         $tenantId       = $request->header('X-Tenant-Id');
@@ -375,6 +375,16 @@ class ComandaController extends Controller
             return response()->json(['ok'=>false,'msg'=>'Unauthorized'], 401);
         }
 
+        if (!$comanda_id) {
+            return response()->json(['error' => 'comanda_id requerido'], 400);
+        }
+
+        $comanda = Comanda::with('items')->find($comanda_id);
+
+        if (!$comanda) {
+            return response()->json(['error' => 'comanda no encontrada'], 404);
+        }
+
         if ( $orden == "print_comanda" )
         {
 
@@ -384,7 +394,7 @@ class ComandaController extends Controller
             // Toma el primero en cola para ese agente
             $job = PrintJob::where('tenant_id', $tenant->id)
                 ->where('agent_id', $agent->id)
-                ->where('comanda_id', $comanda_id)
+                ->where('comanda_id', $comanda->id)
                 ->where('status', 'queued')
                 ->orderBy('created_at')
                 ->first();
