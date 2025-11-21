@@ -354,26 +354,25 @@ class ComandaController extends Controller
     {
         $comanda_id = $request->get('comanda_id');
 
-        $authHeader     = $request->header('Authorization'); // "Bearer xxx"
-        $tenantId       = $request->header('X-Tenant-Id');
-        $agentId        = $request->header('X-Agent-Id');
+        $authHeader = $request->header('Authorization'); // "Bearer xxx"
+        $tenantKey  = $request->header('X-Tenant-Id');   // "TENANT_abc123"
+        $agentKey   = $request->header('X-Agent-Id');    // "AGENT_9f2c7e"
+        $orden      = $request->orden;                  // "print_comanda"
 
-        $orden = $request->orden; // "print_comanda", "etc"
-        //$orden = "print_comanda";
-
+        // 1) Auth básica
         if (!$authHeader || !str_contains($authHeader, 'Bearer ')) {
             return response()->json(['message' => 'No autorizado'], 401);
         }
 
-        $token = trim(str_replace('Bearer ', '', $authHeader));
+        $token       = trim(str_replace('Bearer ', '', $authHeader));
         $serverToken = trim(config('services.print_agent_token'));
 
         if ($token !== $serverToken) {
             return response()->json(['message' => 'Token inválido'], 401);
         }
 
-        if (!$authHeader || !$tenantId || !$agentId) {
-            return response()->json(['ok'=>false,'msg'=>'Unauthorized'], 401);
+        if (!$tenantKey || !$agentKey) {
+            return response()->json(['ok' => false, 'msg' => 'Faltan headers de Tenant / Agent'], 401);
         }
 
         if (!$comanda_id) {
@@ -381,18 +380,25 @@ class ComandaController extends Controller
         }
 
         $comanda = Comanda::with('items')->find($comanda_id);
-
         if (!$comanda) {
             return response()->json(['error' => 'comanda no encontrada'], 404);
         }
 
-        if ( $orden == "print_comanda" )
-        {
+        // 2) Mapear el "código" de header al ID numérico
+        $tenant = Tenant::where('name', $tenantKey)->first();
+        $agent  = Agent::where('name', $agentKey)->first();
 
-            $tenant = Tenant::where('name', $tenantId)->first();
-            $agent = Agent::where('name', $agentId)->first();
+        if (!$tenant || !$agent) {
+            return response()->json([
+                'ok'  => false,
+                'msg' => 'Tenant o Agent no registrados en el sistema',
+                'tenant_key' => $tenantKey,
+                'agent_key'  => $agentKey,
+            ], 404);
+        }
 
-            // Toma el primero en cola para ese agente
+        if ($orden === 'print_comanda') {
+
             $job = PrintJob::where('tenant_id', $tenant->id)
                 ->where('agent_id', $agent->id)
                 ->where('comanda_id', $comanda_id)
@@ -400,14 +406,15 @@ class ComandaController extends Controller
                 ->orderBy('created_at')
                 ->first();
 
-            if (!$job) return response()->noContent(); // 204
+            if (!$job) {
+                // Aquí es donde hoy te devuelve 204
+                return response()->noContent();
+            }
 
-            //Marcarlo "taken" para que no lo tome otro
             $job->status = 'taken';
             $job->save();
 
             $items = $comanda->items->map(function ($detail) {
-                // Reutilizamos la lógica de opciones
                 $ops = is_array($detail->opciones)
                     ? $detail->opciones
                     : (json_decode($detail->opciones ?? '[]', true) ?: []);
@@ -415,52 +422,46 @@ class ComandaController extends Controller
                 $grupos = $ops['grupos'] ?? [];
 
                 $groups = collect($grupos)->map(function ($grupo) use ($detail) {
-                    //$description = $grupo['descripcion'] ?? null;
-
                     $selections = collect($grupo['selecciones'] ?? [])->map(function ($sel) use ($detail) {
                         $label = $sel['name'] ?? $sel['nombre'] ?? '—';
 
                         return [
                             'label' => $label,
-                            'qty'   => (float) $detail->cantidad, // mismo multiplicador que en la vista
+                            'qty'   => (float)$detail->cantidad,
                         ];
                     })->values()->all();
 
                     return [
-                        //'description' => $description,
-                        'selections'  => $selections,
+                        'selections' => $selections,
                     ];
                 })->values()->all();
 
                 return [
                     'name'   => $detail->nombre,
-                    'qty'    => (float) $detail->cantidad,
+                    'qty'    => (float)$detail->cantidad,
                     'groups' => $groups,
                 ];
             })->values()->all();
 
-            /*dump($items);
-            dd();*/
-
             return response()->json([
-                'id'                    => $comanda->id,
-                'numero'                => $comanda->numero,
-                'mesa'                  => optional($comanda->atencion->mesa)->nombre,
-                'mozo'                  => optional($comanda->atencion->mozo)->nombre,
-                'total'                 => $comanda->total,
-                'status'                => $this->mapComandaToKanban($comanda->estado),
-                'send_to_kitchen_at'    => $comanda->formatted_send_to_kitchen,
-                'started_cooking_at'    => $comanda->formatted_started_cooking,
-                'estimated_ready_at'    => $comanda->formatted_estimated_ready,
-                'items'                 => $items,
-                'job_id'                => $job->id,
-                'tenant_id'             => $job->tenant_id,
-                'agent_id'              => $job->agent_id,
-                'printer_name'          => $job->printer_name,
-                'content'               => $job->content,
+                'id'                 => $comanda->id,
+                'numero'             => $comanda->numero,
+                'mesa'               => optional($comanda->atencion->mesa)->nombre,
+                'mozo'               => optional($comanda->atencion->mozo)->nombre,
+                'total'              => $comanda->total,
+                'status'             => $this->mapComandaToKanban($comanda->estado),
+                'send_to_kitchen_at' => $comanda->formatted_send_to_kitchen,
+                'started_cooking_at' => $comanda->formatted_started_cooking,
+                'estimated_ready_at' => $comanda->formatted_estimated_ready,
+                'items'              => $items,
+                'job_id'             => $job->id,
+                'tenant_id'          => $job->tenant_id,
+                'agent_id'           => $job->agent_id,
+                'printer_name'       => $job->printer_name,
+                'content'            => $job->content,
             ]);
         }
 
-        return -1;
+        return response()->json(['error' => 'orden no soportada'], 400);
     }
 }
