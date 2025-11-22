@@ -40,5 +40,6 @@ return [
     ],
 
     'print_agent_token' => env('API_PRINT_AGENT_TOKEN'),
+    'tenant_id' => env('TENANT_ID'),
 
 ];

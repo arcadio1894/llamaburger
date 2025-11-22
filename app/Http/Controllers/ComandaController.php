@@ -89,7 +89,7 @@ class ComandaController extends Controller
 
     public function send(Request $request, Comanda $comanda)
     {
-        $tenantCurrent = env('TENANT_ID');
+        $tenantCurrent = trim(config('services.tenant_id'));
         $tenant = Tenant::where('name', $tenantCurrent)->first();
         $agent = Agent::where('tenant_id', $tenant->id)->first();
 
