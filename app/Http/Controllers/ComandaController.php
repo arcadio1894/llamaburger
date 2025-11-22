@@ -400,58 +400,39 @@ class ComandaController extends Controller
 
         if ($orden === 'print_comanda') {
 
-            Log::info('PrintAgent getDataComanda', [
-                'header_tenant' => $tenantKey,
-                'header_agent'  => $agentKey,
-                'tenant_id'     => optional($tenant)->id,
-                'agent_id'      => optional($agent)->id,
-                'comanda_id'    => $comanda_id,
-            ]);
+            $tenant = Tenant::where('name', $tenantKey)->first();
+            $agent  = Agent::where('name', $agentKey)->first();
 
-            // Solo para probar, mira cuántos jobs coinciden estrictamente
-            $debugJobs = PrintJob::where('tenant_id', optional($tenant)->id)
-                ->where('agent_id', optional($agent)->id)
+            if (!$tenant || !$agent) {
+                Log::warning('PrintAgent: tenant/agent no encontrados', [
+                    'header_tenant' => $tenantKey,
+                    'header_agent'  => $agentKey,
+                ]);
+                return response()->json(['message' => 'Tenant o Agent inválido'], 404);
+            }
+
+            // 🔹 Buscar job en cola o ya tomado, pero NO printed ni error
+            $job = PrintJob::where('tenant_id', $tenant->id)
+                ->where('agent_id', $agent->id)
                 ->where('comanda_id', $comanda_id)
-                ->where('status', 'queued')
-                ->get();
-
-            Log::info('PrintAgent jobs match strict', [
-                'count' => $debugJobs->count(),
-                'jobs'  => $debugJobs->toArray(),
-            ]);
-
-            // 1) Intento estricto (tenant + agent + comanda)
-            $job = PrintJob::where('tenant_id', $tenant->id ?? 0)
-                ->where('agent_id', $agent->id ?? 0)
-                ->where('comanda_id', $comanda_id)
-                ->where('status', 'queued')
+                ->whereIn('status', ['queued', 'taken'])
                 ->orderBy('created_at')
                 ->first();
 
-            // 2) Si no hay, intento solo por comanda_id + status (para debug)
             if (!$job) {
-                Log::warning('PrintAgent: no job with strict filter, trying fallback', [
-                    'tenant_id'  => optional($tenant)->id,
-                    'agent_id'   => optional($agent)->id,
-                    'comanda_id' => $comanda_id,
-                ]);
-
-                $job = PrintJob::where('comanda_id', $comanda_id)
-                    ->where('status', 'queued')
-                    ->orderBy('created_at')
-                    ->first();
-            }
-
-            // 3) Si aún así no hay, ya es realmente 204
-            if (!$job) {
-                Log::warning('PrintAgent: no job found even with fallback', [
+                Log::info('PrintAgent: no hay job pendiente', [
+                    'tenant_id'  => $tenant->id,
+                    'agent_id'   => $agent->id,
                     'comanda_id' => $comanda_id,
                 ]);
                 return response()->noContent(); // 204
             }
 
-            $job->status = 'taken';
-            $job->save();
+            // 🔹 Solo cambiar a taken si estaba en queued
+            if ($job->status === 'queued') {
+                $job->status = 'taken';
+                $job->save();
+            }
 
             $items = $comanda->items->map(function ($detail) {
                 $ops = is_array($detail->opciones)
